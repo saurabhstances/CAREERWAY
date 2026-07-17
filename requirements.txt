@@ -10,3 +10,4 @@ schedule
 thefuzz
 pypdf
 python-dotenv
+psycopg2-binary

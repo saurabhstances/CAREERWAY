@@ -27,15 +27,17 @@ from dotenv import load_dotenv
 # Disable SSL warnings
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+basedir = os.path.abspath(os.path.dirname(__file__))
+
 app = Flask(__name__)
 app.secret_key = "careerway_secret_key"
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///careerway.db'
+default_sqlite = 'sqlite:///' + os.path.join(basedir, 'careerway.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', default_sqlite)
 app.config['UPLOAD_FOLDER'] = 'static/resumes'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-UPLOAD_FOLDER = 'static/uploads/feedback'
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
+FEEDBACK_UPLOAD_FOLDER = 'static/uploads/feedback'
+os.makedirs(FEEDBACK_UPLOAD_FOLDER, exist_ok=True)
 
 # --- GEMINI CONFIG ---
 load_dotenv()
@@ -134,14 +136,9 @@ class StudyLog(db.Model):
     status = db.Column(db.String(20), default='Completed')
     topic_covered = db.Column(db.String(100))
 
-# Create tables automatically
 with app.app_context():
-    # Ensure the directory for the SQLite database exists
-    db_dir = os.path.dirname(os.path.abspath('careerway.db'))
-    os.makedirs(db_dir, exist_ok=True)
     db.create_all()
-    print("Database tables created successfully!") # Check logs for this
-
+    print("Database tables verified and created successfully!")
 def __repr__(self):
     return f'<Feedback {self.category} - {self.id}>'
 

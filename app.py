@@ -438,7 +438,7 @@ def email_matches():
         
     return redirect(url_for('dashboard'))
 
-@app.route('/auto_fetch_sarkari', methods=['POST'])
+@app.route('/auto_fetch_sarkari', methods=['GET','POST'])
 def auto_fetch_sarkari():
     from auto_scraper import fetch_latest_jobs
     try:

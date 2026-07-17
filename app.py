@@ -133,14 +133,15 @@ class StudyLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     date = db.Column(db.String(20), nullable=False) # Format YYYY-MM-DD
-    status = db.Column(db.String(20), default='Completed')
-    topic_covered = db.Column(db.String(100))
+   status = db.Column(db.String(20), default='Completed')
+        topic_covered = db.Column(db.String(100))
 
+           
+# --- DATABASE SETUP ---
 with app.app_context():
     db.create_all()
     print("Database tables verified and created successfully!")
-def __repr__(self):
-    return f'<Feedback {self.category} - {self.id}>'
+
 
 # --- HELPERS ---
 def generate_unique_username(full_name):
@@ -149,6 +150,10 @@ def generate_unique_username(full_name):
     while User.query.filter_by(username=candidate).first():
         candidate = base_name + str(random.randint(100, 999))
     return candidate
+
+def __repr__(self):
+    return f'<Feedback {self.category} - {self.id}>'
+
 
 def calculate_profile_score(user):
     score = 0

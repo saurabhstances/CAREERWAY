@@ -387,14 +387,17 @@ def admin_dashboard():
     # FIX: Corrected Template Case Sensitivity
     return render_template('admin_dashboard.html', recruiters=recruiters, students=students, 
                            stats={'total_recruiters': len(recruiters), 'total_students': len(students)})
+# --- SCHEDULER LOGIC ---
+def run_sched():
+    while True:
+        schedule.run_pending()
+        time.sleep(60)
+
+if not os.environ.get("WERKZEUG_RUN_MAIN"):
+    from auto_scraper import fetch_latest_jobs
+    schedule.every(6).hours.do(fetch_latest_jobs)
+    threading.Thread(target=run_sched, daemon=True).start()
 
 if __name__ == '__main__':
-    # Scheduler logic (runs only on main process)
-    if not os.environ.get("WERKZEUG_RUN_MAIN") and os.environ.get('RENDER') is None:
-        from auto_scraper import fetch_latest_jobs
-        schedule.every(6).hours.do(fetch_latest_jobs)
-        def run_sched():
-            while True: schedule.run_pending(); time.sleep(60)
-        threading.Thread(target=run_sched, daemon=True).start()
-    
-    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)

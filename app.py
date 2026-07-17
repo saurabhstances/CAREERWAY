@@ -134,9 +134,16 @@ class StudyLog(db.Model):
     status = db.Column(db.String(20), default='Completed')
     topic_covered = db.Column(db.String(100))
 
+# Create tables automatically
+with app.app_context():
+    # Ensure the directory for the SQLite database exists
+    db_dir = os.path.dirname(os.path.abspath('careerway.db'))
+    os.makedirs(db_dir, exist_ok=True)
+    db.create_all()
+    print("Database tables created successfully!") # Check logs for this
 
-    def __repr__(self):
-        return f'<Feedback {self.category} - {self.id}>'
+def __repr__(self):
+    return f'<Feedback {self.category} - {self.id}>'
 
 # --- HELPERS ---
 def generate_unique_username(full_name):

@@ -31,14 +31,17 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 
 app = Flask(__name__)
 app.secret_key = "careerway_secret_key"
-default_sqlite = 'sqlite:///' + os.path.join(basedir, 'careerway.db')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', default_sqlite)
+
+db_url = os.environ.get('DATABASE_URL', 'sqlite:///' + os.path.join(basedir, 'careerway.db'))
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['UPLOAD_FOLDER'] = 'static/resumes'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 FEEDBACK_UPLOAD_FOLDER = 'static/uploads/feedback'
 os.makedirs(FEEDBACK_UPLOAD_FOLDER, exist_ok=True)
-
 # --- GEMINI CONFIG ---
 load_dotenv()
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))

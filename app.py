@@ -450,12 +450,15 @@ def dashboard():
 
 @app.route('/wipe-jobs')
 def wipe_jobs():
-    # Use the existing global db and Job model without re-importing from app
-    from __main__ import db, Job
     try:
-        Job.query.delete()
+        # Import directly from the app module instead of __main__
+        from app import db, Job
+        
+        # Perform the deletion
+        num_deleted = Job.query.delete()
         db.session.commit()
-        return "All jobs wiped successfully!"
+        
+        return f"Success! {num_deleted} jobs wiped."
     except Exception as e:
         return f"Error: {str(e)}"
 

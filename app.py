@@ -449,6 +449,7 @@ def dashboard():
                             top_candidates=top_candidates)
 
 @app.route('/email_matches', methods=['POST'])
+@csrf.exempt
 def email_matches():
     if 'user_id' not in session: return redirect(url_for('login'))
     user = User.query.get(session['user_id'])
@@ -490,6 +491,7 @@ def auto_fetch_sarkari():
     return redirect(url_for('dashboard'))
 
 @app.route('/complete_profile', methods=['GET', 'POST'])
+@csrf.exempt
 def complete_profile():
     if 'user_id' not in session: return redirect(url_for('login'))
     user = User.query.get(session['user_id'])
@@ -529,6 +531,7 @@ def view_job(job_id):
 
 # --- APPLY PROCESS (EMAIL REMOVED AS REQUESTED) ---
 @app.route('/apply_process/<int:job_id>', methods=['GET', 'POST'])
+@csrf.exempt
 def apply_process(job_id):
     if 'user_id' not in session: return redirect(url_for('login'))
     job = Job.query.get_or_404(job_id)
@@ -557,6 +560,7 @@ def recruiter_dashboard():
     return render_template('recruiter_dashboard.html', jobs=my_jobs, stats=stats, user_name=session.get('user_name'))
 
 @app.route('/post_job', methods=['GET', 'POST'])
+@csrf.exempt
 def post_job():
     if 'user_id' not in session or session.get('user_role') != 'Recruiter': return redirect(url_for('login'))
     if request.method == 'POST':
@@ -617,6 +621,7 @@ def library():
     return render_template('library.html', govt_papers=govt_papers, coding_notes=coding_notes, syllabus=syllabus, user_name=session.get('user_name'))
 
 @app.route('/upload_resource', methods=['GET', 'POST'])
+@csrf.exempt
 def upload_resource():
     if 'user_id' not in session: return redirect(url_for('login'))
     if request.method == 'POST':
@@ -637,6 +642,7 @@ def download_file(filename):
     return redirect(url_for('static', filename='resumes/' + filename))
 
 @app.route('/resume_builder', methods=['GET', 'POST'])
+@csrf.exempt
 def resume_builder():
     if 'user_id' not in session: return redirect(url_for('login'))
     user = User.query.get(session['user_id'])
@@ -655,6 +661,7 @@ def ai_job_matcher():
     return render_template('job_matches.html', user=user)
 
 @app.route('/api/perform_match', methods=['POST'])
+@csrf.exempt
 def api_perform_match():
     if 'user_id' not in session: return jsonify({"error": "Unauthorized"}), 401
     user = User.query.get(session['user_id'])
@@ -672,6 +679,7 @@ def api_perform_match():
     except: return jsonify({"matches": []})
 
 @app.route('/submit_govt_job', methods=['GET', 'POST'])
+@csrf.exempt
 def submit_govt_job():
     if 'user_id' not in session: return redirect(url_for('login'))
     if request.method == 'POST':
@@ -680,6 +688,7 @@ def submit_govt_job():
 
 # --- 1. UPGRADED SMART CHAT BOT WITH STRICT STRUCTURE ---
 @app.route('/ask_botg', methods=['POST'])
+@csrf.exempt
 def ask_botg():
     if 'user_id' not in session: 
         return {"reply": "Please login to chat with me! 🤖"}
@@ -740,6 +749,7 @@ def ask_botg():
 
 # --- 2. NEW REAL-TIME TRANSLATION API ---
 @app.route('/api/translate_chat', methods=['POST'])
+@csrf.exempt
 def translate_chat():
     data = request.get_json()
     text = data.get('text', '')
@@ -781,6 +791,7 @@ def interview_prep():
                            stats=stats)
 
 @app.route('/api/interview_bot', methods=['POST'])
+@csrf.exempt
 def interview_bot():
     try:
         data = request.get_json()
@@ -830,6 +841,7 @@ def interview_bot():
 # --- AI ROADMAP & DAILY TASK APIs ---
 
 @app.route('/api/generate_roadmap', methods=['POST'])
+@csrf.exempt
 def generate_roadmap():
     if 'user_id' not in session: return jsonify({"error": "Unauthorized"}), 401
     user = User.query.get(session['user_id'])
@@ -889,6 +901,7 @@ def get_daily_task():
         return jsonify({"error": "AI Brain Busy"})
 
 @app.route('/api/mark_complete', methods=['POST'])
+@csrf.exempt
 def mark_complete():
     if 'user_id' not in session: return jsonify({"error": "Auth needed"})
     today = datetime.now().strftime("%Y-%m-%d")
@@ -903,6 +916,7 @@ def mark_complete():
 
 # --- 🔥 AI COVER LETTER GENERATOR ---
 @app.route('/api/write_cover_letter', methods=['POST'])
+@csrf.exempt
 def write_cover_letter():
     if 'user_id' not in session: return jsonify({"error": "Unauthorized"}), 401
     
@@ -940,6 +954,7 @@ def write_cover_letter():
     
 # --- STRICT RESUME SMART WRITE ---
 @app.route('/api/enhance_resume_text', methods=['POST'])
+@csrf.exempt
 def enhance_resume_text():
     data = request.get_json()
     raw_text = data.get('text', '')
@@ -974,6 +989,7 @@ def enhance_resume_text():
 
 # --- 🔥 AI RESUME ATS SCANNER ---
 @app.route('/api/scan_resume', methods=['POST'])
+@csrf.exempt
 def scan_resume():
     if 'user_id' not in session: return jsonify({"error": "Unauthorized"}), 401
     user = User.query.get(session['user_id'])
@@ -1046,6 +1062,7 @@ def delete_job(job_id):
 
 # --- 🔥 AI RECRUITER: SMART APPLICANT RANKING 🔥 ---
 @app.route('/api/rank_applicants/<int:job_id>', methods=['POST'])
+@csrf.exempt
 def ai_rank_applicants(job_id):
     if 'user_id' not in session or session.get('user_role') != 'Recruiter': 
         return jsonify({"error": "Unauthorized"}), 401
@@ -1097,6 +1114,7 @@ def ai_rank_applicants(job_id):
 
 # --- USER FEEDBACK ROUTE ---
 @app.route('/feedback', methods=['GET', 'POST'])
+@csrf.exempt
 def feedback():
     # Guests can provide feedback too, but we track user_id if logged in
     is_logged_in = 'user_id' in session
@@ -1151,6 +1169,7 @@ def admin_gateway():
 
 # 🔥 4. AUTHENTICATION PROCESS
 @app.route('/process_admin', methods=['POST'])
+@csrf.exempt
 def process_admin():
     admin_id = request.form.get('admin_id')
     admin_pwd = request.form.get('admin_pwd')

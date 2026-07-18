@@ -23,6 +23,9 @@ from flask import request, abort, session, render_template, redirect, url_for
 from datetime import datetime
 import pypdf
 from dotenv import load_dotenv
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from flask_wtf.csrf import CSRFProtect
 
 # Disable SSL warnings
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -31,6 +34,25 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 
 app = Flask(__name__)
 app.secret_key = "careerway_secret_key"
+app.config.update(
+    SESSION_COOKIE_SECURE=True,    # Transmit cookies over HTTPS only
+    SESSION_COOKIE_HTTPONLY=True,  # Prevent JavaScript XSS cookie theft
+    SESSION_COOKIE_SAMESITE='Lax'  # Mitigate cross-site tracking
+)
+
+# Initialize CSRF Protection
+csrf = CSRFProtect(app)
+
+# Initialize Brute-Force Rate Limiter
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://"
+)
+
+# Strict Password : Min 8 chars, 1 uppercase, 1 number, 1 special character
+PASSWORD_REGEX = r"^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&()#_+\-=\[\]{}|;:',.<>?/~`^])[A-Za-z\d@$!%*?&()#_+\-=\[\]{}|;:',.<>?/~`^]{8,}$"
 
 db_url = os.environ.get('DATABASE_URL', 'sqlite:///' + os.path.join(basedir, 'careerway.db'))
 if db_url.startswith("postgres://"):
@@ -255,11 +277,12 @@ def get_recommendations(user):
 def home(): return redirect(url_for('login'))
 
 @app.route('/login', methods=['GET', 'POST'])
+@limiter.limit("10 per minute")  # Prevent brute-force login attacks
 def login():
     if request.method == 'POST':
-        user_input = request.form['email']
+        user_input = request.form['email'].strip()
         password = request.form['password']
-        user = User.query.filter(or_(User.email == user_input, User.username == user_input)).first()
+        user = User.query.filter(or_(User.email == user_input.lower(), User.username == user_input)).first()
         if user and check_password_hash(user.password, password):
             session['user_id'] = user.id
             session['user_name'] = user.name
@@ -277,12 +300,25 @@ def logout():
     return redirect(url_for('login'))
 
 @app.route('/register', methods=['GET', 'POST'])
+@limiter.limit("10 per minute")  # Prevent registration spam
 def register():
     if request.method == 'POST':
-        name = request.form['name']
-        email = request.form['email']
+        name = request.form['name'].strip()
+        email = request.form['email'].strip().lower()
         password = request.form['password']
         role = request.form['role']
+        
+        # 1. IMMEDIATE EMAIL UNIQUENESS CHECK
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            flash("This Email ID is already registered! Please log in instead.", "danger")
+            return render_template('register.html')
+            
+        # 2. STRICT PASSWORD STRENGTH VALIDATION
+        if not re.match(PASSWORD_REGEX, password):
+            flash("Security Alert: Password must be at least 8 characters long and include 1 uppercase letter, 1 number, and 1 special character.", "danger")
+            return render_template('register.html')
+
         auto_username = generate_unique_username(name)
         hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
         
@@ -297,10 +333,10 @@ def register():
             if role == 'Recruiter': return redirect(url_for('recruiter_dashboard'))
             return redirect(url_for('dashboard'))
         except Exception as e: 
+            db.session.rollback() # Prevent database corruption on error
             print(f"Register Error: {e}") 
-            flash("Error: Email already exists.", "danger")
+            flash("An internal error occurred. Please try again later.", "danger")
     return render_template('register.html')
-
 # ===========================
 #      DASHBOARD & CORE
 # ===========================

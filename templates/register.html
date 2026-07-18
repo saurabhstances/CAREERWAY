@@ -96,6 +96,8 @@
         {% endwith %}
 
         <form method="POST">
+            <!-- SECURITY: Hidden CSRF Token -->
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             
             <div class="form-floating mb-3">
                 <input type="text" name="name" class="form-control" id="nameInput" placeholder="John Doe" required>

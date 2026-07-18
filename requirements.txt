@@ -1,13 +1,26 @@
+# --- CORE FLASK & DATABASE ---
 Flask
 Flask-SQLAlchemy
 Flask-Mail
-Flask-Login
-google-generativeai
+Werkzeug
 gunicorn
+psycopg2-binary
+
+# --- SECURITY & PROTECTION (NEW 🔥) ---
+Flask-Limiter
+Flask-WTF
+WTForms
+
+# --- AI & ENVIRONMENT ---
+google-generativeai
+python-dotenv
+
+# --- AUTOMATION & SCRAPING ---
 requests
 beautifulsoup4
 schedule
+
+# --- UTILITIES & PDF ---
 thefuzz
 pypdf
-python-dotenv
-psycopg2-binary
+urllib3

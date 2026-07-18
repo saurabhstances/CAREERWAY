@@ -60,7 +60,7 @@
         .delay-2 { animation-delay: 0.2s; }
         .delay-3 { animation-delay: 0.3s; }
 
-        /* 櫨 STICKY BACK BUTTON CSS 櫨 */
+        /* 🔥 STICKY BACK BUTTON CSS 🔥 */
         .sticky-back-wrapper {
             position: sticky;
             top: 85px; 
@@ -128,55 +128,26 @@
         .desc-content h3, .desc-content h4 { font-size: 1.1rem; font-weight: 700; color: var(--text-main); margin-top: 25px; margin-bottom: 10px;}
         .desc-content ul { padding-left: 20px; margin-bottom: 20px; }
         .desc-content li { margin-bottom: 8px; }
+        .desc-content a { color: var(--primary-color); text-decoration: none; font-weight: 600;}
         
-        /* 櫨 GUARANTEED CLICKABLE & VIVID LINKS IN LIGHT THEME 櫨 */
-        .desc-content a,
-        .desc-content a *,
-        .desc-content table a,
-        .desc-content table a * {
-            color: #2563EB !important; /* Vivid Royal Blue */
-            text-decoration: underline !important;
-            font-weight: 700 !important;
-            cursor: pointer !important;
-            pointer-events: auto !important;
-            position: relative !important;
-            z-index: 50 !important;
-            display: inline-block !important;
-        }
-        
-        /* Strict Table Formatting for Scraped Govt Sites - Light Mode Colors */
-        .desc-content table { width: 100%; border-collapse: separate; border-spacing: 0; margin: 25px 0; border: 1px solid var(--border-color) !important; border-radius: 10px; overflow: hidden; background: var(--card-bg) !important;}
-        .desc-content th { background-color: #F1F5F9 !important; border-bottom: 1px solid var(--border-color) !important; border-right: 1px solid var(--border-color) !important; padding: 15px; text-align: left; font-weight: 700; color: #1E293B !important; }
-        .desc-content td { border-bottom: 1px solid var(--border-color) !important; border-right: 1px solid var(--border-color) !important; padding: 15px; color: var(--text-main) !important; background-color: var(--card-bg) !important;}
-        .desc-content tr:last-child td { border-bottom: none !important; }
-        .desc-content th:last-child, .desc-content td:last-child { border-right: none !important; }
+        /* Strict Table Formatting for Scraped Govt Sites */
+        .desc-content table { width: 100%; border-collapse: separate; border-spacing: 0; margin: 25px 0; border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden; background: var(--card-bg);}
+        .desc-content th { background-color: var(--grid-bg); border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); padding: 15px; text-align: left; font-weight: 700; color: var(--text-main); }
+        .desc-content td { border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); padding: 15px; color: var(--text-main);}
+        .desc-content tr:last-child td { border-bottom: none; }
+        .desc-content th:last-child, .desc-content td:last-child { border-right: none; }
 
-        /* 櫨 AGGRESSIVE DARK MODE FIX FOR INVISIBLE TEXT & HIGH CONTRAST 櫨 */
+        /* 🔥 AGGRESSIVE DARK MODE FIX FOR INVISIBLE SARKARIRESULT TEXT 🔥 */
+        /* This forces EVERY single element inside the table to turn white in dark mode */
         [data-theme="dark"] .desc-content,
         [data-theme="dark"] .desc-content * {
             color: #F9FAFB !important; 
             background-color: transparent !important;
             border-color: #374151 !important;
         }
-        
-        [data-theme="dark"] .desc-content table,
-        [data-theme="dark"] .desc-content th,
-        [data-theme="dark"] .desc-content td {
-            background-color: #1F2937 !important;
-            border-color: #374151 !important;
-            color: #F9FAFB !important;
-        }
-        [data-theme="dark"] .desc-content th {
-            background-color: #111827 !important; /* Slightly darker header for contrast */
-        }
-
-        /* 櫨 GUARANTEED CLICKABLE & VIVID LINKS IN DARK THEME 櫨 */
         [data-theme="dark"] .desc-content a,
-        [data-theme="dark"] .desc-content a *,
-        [data-theme="dark"] .desc-content table a,
-        [data-theme="dark"] .desc-content table a * {
-            color: #60A5FA !important; /* Glowing Sky Blue so they stand out cleanly */
-            text-decoration: underline !important;
+        [data-theme="dark"] .desc-content a * {
+            color: #818CF8 !important; /* Bright blue for links so they are readable */
         }
         
         @media (max-width: 768px) {
@@ -356,61 +327,53 @@
     </script>
 
     <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const contentContainer = document.querySelector('.desc-content');
-        if (!contentContainer) return;
+        document.addEventListener("DOMContentLoaded", function() {
+            const contentContainer = document.querySelector('.desc-content');
+            if (!contentContainer) return;
 
-        const officialFallbackUrl = "{{ job.source_link }}";
-        const jobTitle = "{{ job.title | replace('\"', '') }}";
+            // 1. Target junk keywords to remove social media rows from Sarkari tables
+            const junkKeywords = [
+                'whatsapp', 'telegram', 'instagram', 'mobile app', 
+                'youtube', 'facebook', 'twitter', 'follow us', 'join our'
+            ];
 
-        // 1. Clean out social media rows
-        const junkKeywords = ['whatsapp', 'telegram', 'instagram', 'mobile app', 'youtube', 'facebook', 'twitter', 'follow us', 'join our'];
-        contentContainer.querySelectorAll('tr').forEach(row => {
-            if (junkKeywords.some(keyword => row.textContent.toLowerCase().includes(keyword))) {
-                row.remove();
-            }
-        });
+            const tableRows = contentContainer.querySelectorAll('tr');
+            tableRows.forEach(row => {
+                const rowText = row.textContent.toLowerCase();
+                const isJunk = junkKeywords.some(keyword => rowText.includes(keyword));
+                if (isJunk) row.remove(); 
+            });
 
-        // 2. FORCE CLICKABLE BUTTONS
-        // This targets any cell containing "Click Here" and makes the whole box a link
-        contentContainer.querySelectorAll('td').forEach(cell => {
-            const cellText = cell.textContent.toLowerCase();
-            
-            // Only target cells that contain "Click Here"
-            if (cellText.includes('click')) {
-                
-                // Block clicking if it's a future activation date
-                if (cellText.includes('activate') || cellText.includes('july')) {
-                    cell.style.cursor = "default";
-                    return; 
+            // 2. Format Links
+            const allLinks = contentContainer.querySelectorAll('a');
+            allLinks.forEach(link => {
+                const linkText = link.textContent.toLowerCase();
+                if (junkKeywords.some(keyword => linkText.includes(keyword))) {
+                    link.remove();
+                } else {
+                    link.setAttribute('target', '_blank');
+                    link.setAttribute('rel', 'noopener noreferrer'); 
+                    link.classList.add('fw-bold', 'text-decoration-none');
+                    if(linkText.includes('click') || linkText.includes('download') || linkText.includes('apply')) {
+                        link.classList.add('text-primary');
+                    }
                 }
+            });
 
-                // Make the cell a button
-                cell.style.cursor = "pointer";
-                cell.style.backgroundColor = "rgba(79, 70, 229, 0.1)"; // Light blue highlight
-                cell.style.border = "1px solid #4F46E5";
+            // 3. Strip hardcoded SarkariResult colors to ensure Dark Mode CSS can take over
+            const allElements = contentContainer.querySelectorAll('*');
+            allElements.forEach(el => {
+                if (el.hasAttribute('color')) el.removeAttribute('color');
+                if (el.hasAttribute('bgcolor')) el.removeAttribute('bgcolor');
                 
-                cell.onclick = function() {
-                    let targetUrl = officialFallbackUrl;
-                    const existingLink = cell.querySelector('a');
-                    
-                    if (existingLink && existingLink.getAttribute('href') && existingLink.getAttribute('href') !== '#') {
-                        targetUrl = existingLink.getAttribute('href');
-                    }
-                    
-                    if (targetUrl && targetUrl.startsWith('http')) {
-                        window.open(targetUrl, '_blank', 'noopener,noreferrer');
-                    } else {
-                        window.open(`https://www.google.com/search?q=${encodeURIComponent(jobTitle + ' official website')}`, '_blank');
-                    }
-                };
-            }
+                if (el.style.color === 'black' || el.style.color === '#000000' || el.style.color === 'rgb(0, 0, 0)') {
+                    el.style.color = '';
+                }
+                if (el.style.backgroundColor === 'white' || el.style.backgroundColor === '#ffffff' || el.style.backgroundColor === 'rgb(255, 255, 255)') {
+                    el.style.backgroundColor = '';
+                }
+            });
         });
-
-        // 3. Clean up styling for dark mode compatibility
-        contentContainer.querySelectorAll('*').forEach(el => {
-            el.style.color = '';
-            el.style.backgroundColor = '';
-        });
-    });
-</script>
+    </script>
+</body>
+</html>

@@ -8,19 +8,18 @@ HEADERS = {
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
 }
 
-# Added best_link parameter to feed real government URLs into broken table buttons!
-def clean_and_style_html(soup_element, best_link=None, job_title="Govt Job"):
+def clean_and_style_html(soup_element):
     """
     Attempts to clean and style HTML. If it fails, returns raw HTML safely.
     """
     if not soup_element: return ""
 
     try:
-        # 1. REMOVE JUNK TAGS[cite: 7]
+        # 1. REMOVE JUNK TAGS
         for tag in soup_element.find_all(["script", "style", "iframe", "ins", "button", "input", "form", "nav", "footer", "header", "aside", "meta"]):
             if tag: tag.decompose()
 
-        # 2. REMOVE AD DIVS[cite: 7]
+        # 2. REMOVE AD DIVS
         for div in soup_element.find_all("div"):
             if div:
                 classes = str(div.get("class", [])).lower()
@@ -28,12 +27,12 @@ def clean_and_style_html(soup_element, best_link=None, job_title="Govt Job"):
                 if "ad" in classes or "ad" in id_name or "sponsored" in classes:
                     div.decompose()
 
-        # 3. STYLE TABLES (Safe Mode)[cite: 7]
+        # 3. STYLE TABLES (Safe Mode)
         for table in soup_element.find_all("table"):
             table['class'] = "table table-bordered table-striped table-hover"
             table['style'] = "width: 100%; margin-top: 15px; margin-bottom: 25px; background: white;"
             
-            # Safe check for thead[cite: 7]
+            # Safe check for thead
             thead = table.find("thead")
             if thead:
                 thead['class'] = "table-dark"
@@ -42,7 +41,7 @@ def clean_and_style_html(soup_element, best_link=None, job_title="Govt Job"):
                 if first_row: 
                     first_row['style'] = "background-color: #0d6efd; color: white; font-weight: bold; text-align: center;"
 
-        # 4. STYLE HEADERS[cite: 7]
+        # 4. STYLE HEADERS
         for header in soup_element.find_all(["h1", "h2", "h3", "h4", "strong"]):
             text = header.get_text(strip=True)
             if len(text) > 3 and len(text) < 100:
@@ -52,22 +51,11 @@ def clean_and_style_html(soup_element, best_link=None, job_title="Govt Job"):
                 new_tag['style'] = "margin-top: 30px; font-weight: bold; text-align: center; border: none; border-radius: 8px;"
                 header.replace_with(new_tag)
 
-        # 5. FIX LINKS & REPAIR BROKEN SARKARI HREFS 🔥
+        # 5. FIX LINKS
         for a in soup_element.find_all("a"):
             a['target'] = "_blank"
             a['rel'] = "noopener noreferrer"
             a['style'] = "text-decoration: none; color: #dc3545; font-weight: bold;"
-            
-            # --- 🔥 UPGRADE: SMART HREF REPAIR 🔥 ---
-            href = a.get('href', '')
-            # If SarkariExam left the link empty, `#`, or pointing to their own domain:
-            if not href or href == '#' or 'sarkariexam.com' in href or 'sarkariresult.com' in href or not href.startswith('http'):
-                if best_link and best_link.startswith('http') and 'sarkariexam.com' not in best_link:
-                    a['href'] = best_link # Inject the real external government URL!
-                else:
-                    # Failsafe: Generate a Google Search for the official portal
-                    clean_title = re.sub(r'[^a-zA-Z0-9\s]', '', job_title)
-                    a['href'] = f"https://www.google.com/search?q={clean_title.replace(' ', '+')}+apply+online"
             
             if "click" in a.get_text().lower() or "apply" in a.get_text().lower():
                 a['class'] = "btn btn-sm btn-outline-danger ms-2"
@@ -76,31 +64,39 @@ def clean_and_style_html(soup_element, best_link=None, job_title="Govt Job"):
 
     except Exception as e:
         print(f"      ⚠️ Styling Error (Skipping style): {e}")
+        # FALLBACK: If styling fails, return the raw content so we don't lose the job
         return str(soup_element)
 
 def extract_dates(soup):
     """
-    Scans table rows and lists specifically to find accurate Start/End dates.[cite: 7]
+    Scans table rows and lists specifically to find accurate Start/End dates.
     """
     start_date = "Not Specified"
     last_date = "Check Notice"
     
+    # Regex to catch: 12 Jan 2026, 12/01/2026, 12-01-2026
     date_pattern = r'(\d{1,2}[\s\./-](?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|[a-zA-Z]+|\d{1,2})[\s\./-]\d{2,4})'
 
+    # We look inside specific tags where dates usually hide (Lists, Table Rows, Paragraphs)
     date_candidates = soup.find_all(['li', 'tr', 'p', 'td', 'div'])
     
     for tag in date_candidates:
         text = tag.get_text(" ", strip=True).lower()
         
+        # SKIP if the line contains "admit card" or "result" (prevents grabbing wrong dates)
         if "admit" in text or "result" in text or "answer" in text:
             continue
 
+        # --- 1. FIND START DATE (Updated with your screenshots keywords) ---
+        # Added: 'application start', 'registration starting'
         if any(kw in text for kw in ['application start', 'starting date', 'registration starting', 'registration start', 'application begin', 'open form']):
             match = re.search(date_pattern, text, re.IGNORECASE)
             if match:
                 start_date = match.group(1)
         
+        # --- 2. FIND LAST DATE ---
         if any(kw in text for kw in ['last date', 'closing date', 'end date', 'apply online upto', 'registration last']):
+            # Avoid confusing "Fee Payment Last Date" with the actual "Form Last Date"
             if "fee" not in text or last_date == "Check Notice":
                 match = re.search(date_pattern, text, re.IGNORECASE)
                 if match:
@@ -124,27 +120,6 @@ def scrape_job_smartly(url):
         if not title_tag: title_tag = soup.find('h2')
         job_title = title_tag.get_text(strip=True) if title_tag else "Govt Job Notification"
 
-        # --- 🔥 NEW: HUNT DOWN THE REAL EXTERNAL GOVERNMENT LINK 🔥 ---
-        best_external_link = None
-        for link in soup.find_all('a', href=True):
-            link_text = link.get_text(strip=True).lower()
-            href = link['href']
-            # Look for buttons that say Apply Online, Official Website, or Notification
-            if any(kw in link_text for kw in ['apply', 'official', 'website', 'notification', 'click here']):
-                # Make sure it's a real external HTTP link and NOT SarkariExam!
-                if href.startswith('http') and 'sarkariexam.com' not in href and 'sarkariresult.com' not in href:
-                    best_external_link = href
-                    print(f"      🎯 Found Real External Link: {best_external_link[:45]}...")
-                    break
-        
-        # If no specific button was found, grab the first external link on the page
-        if not best_external_link:
-            for link in soup.find_all('a', href=True):
-                href = link['href']
-                if href.startswith('http') and 'sarkariexam.com' not in href and 'sarkariresult.com' not in href and 'google.com' not in href:
-                    best_external_link = href
-                    break
-
         # --- B. FIND CONTENT ---
         print("      🔍 Searching for content box...")
         content = soup.find('div', class_='post-content') or soup.find('article') or soup.find('div', id='post-content')
@@ -153,8 +128,7 @@ def scrape_job_smartly(url):
         
         if content:
             print("      ✅ Found Content Box. Cleaning...")
-            # Pass our hunted external link in so it repairs broken table buttons!
-            final_html = clean_and_style_html(content, best_external_link, job_title)
+            final_html = clean_and_style_html(content)
         else:
             print("      ⚠️ Main box missing. Switching to Table Vacuum.")
             all_tables = soup.find_all('table')
@@ -165,8 +139,9 @@ def scrape_job_smartly(url):
                     temp_html += str(t) + "<br>"
                 
                 temp_soup = BeautifulSoup(temp_html, 'html.parser')
-                final_html = clean_and_style_html(temp_soup, best_external_link, job_title)
+                final_html = clean_and_style_html(temp_soup)
 
+        # Check if we got anything
         if not final_html or len(final_html) < 50:
             print("      ❌ No data extracted (Empty).")
             return None
@@ -174,10 +149,12 @@ def scrape_job_smartly(url):
         # --- C. META DATA ---
         full_text = soup.get_text(" ", strip=True)
         
+        # 1. Fees (Preserved from your code)
         fees = "See Notice"
         fee_match = re.search(r'(General|Gen|OBC|EWS).*?(\d{2,4})', full_text, re.IGNORECASE)
         if fee_match: fees = fee_match.group(0)
 
+        # 2. Extract Dates (Using the Smart Helper Function)
         start_date, last_date = extract_dates(soup)
 
         print(f"      🎉 Success! Extracted {len(final_html)} bytes.")
@@ -190,8 +167,7 @@ def scrape_job_smartly(url):
             "last_date": last_date,
             "start_date": start_date, 
             "description": final_html, 
-            # 🔥 NOW SAVING THE REAL GOVT LINK INSTEAD OF SARKARIEXAM! 🔥
-            "source_link": best_external_link if best_external_link else url
+            "source_link": url
         }
 
     except Exception as e:

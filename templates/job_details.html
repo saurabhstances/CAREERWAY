@@ -362,8 +362,9 @@
 
             // The official scraped fallback URL from your backend database
             const officialFallbackUrl = "{{ job.source_link }}";
+            const jobTitle = "{{ job.title | replace('\"', '') }}";
 
-            // 1. Target junk keywords to remove social media rows from Sarkari tables
+            // 1. Remove social media and junk rows from Sarkari tables
             const junkKeywords = [
                 'whatsapp', 'telegram', 'instagram', 'mobile app', 
                 'youtube', 'facebook', 'twitter', 'follow us', 'join our'
@@ -385,28 +386,29 @@
                 } else {
                     let currentHref = link.getAttribute('href');
 
-                    // If the link is broken, empty, links back to sarkariexam homepage, or is a relative link,
-                    // automatically swap it to the official job application link!
+                    // If SarkariExam left the link blank, broke it, or linked to their own homepage:
                     if (!currentHref || 
                         currentHref === '#' || 
                         currentHref.trim() === '' || 
                         currentHref.includes('sarkariexam.com') || 
                         !currentHref.startsWith('http')) {
                         
-                        if (officialFallbackUrl && officialFallbackUrl !== 'None' && officialFallbackUrl !== '') {
+                        // Smart routing: If we have a scraped link, use it! Otherwise, route to official government search!
+                        if (officialFallbackUrl && officialFallbackUrl !== 'None' && officialFallbackUrl !== '' && officialFallbackUrl.startsWith('http')) {
                             link.setAttribute('href', officialFallbackUrl);
                         } else {
-                            // If absolutely no link exists, point to Google Search for the job title as a safe failsafe
-                            link.setAttribute('href', `https://www.google.com/search?q={{ job.title | urlencode }}+apply+online`);
+                            // Automatically generates a direct search to the official government recruitment page!
+                            const searchQuery = encodeURIComponent(`${jobTitle} official recruitment website apply online`);
+                            link.setAttribute('href', `https://www.google.com/search?q=${searchQuery}`);
                         }
                     }
 
-                    // Force opening in a new tab so they don't lose their CareerWay dashboard
+                    // Force opening in a new tab
                     link.setAttribute('target', '_blank');
                     link.setAttribute('rel', 'noopener noreferrer'); 
                     link.classList.add('fw-bold');
                     
-                    // Force pointer events and high z-index so links never freeze or get blocked by invisible divs
+                    // Guarantee clickability over any overlapping divs
                     link.style.position = 'relative';
                     link.style.zIndex = '50';
                     link.style.cursor = 'pointer';
@@ -415,7 +417,7 @@
                 }
             });
 
-            // 3. Strip hardcoded SarkariResult colors so Light and Dark Mode CSS takes over cleanly
+            // 3. Strip hardcoded SarkariResult colors for clean theme support
             const allElements = contentContainer.querySelectorAll('*');
             allElements.forEach(el => {
                 if (el.hasAttribute('color')) el.removeAttribute('color');

@@ -356,77 +356,61 @@
     </script>
 
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            const contentContainer = document.querySelector('.desc-content');
-            if (!contentContainer) return;
+    document.addEventListener("DOMContentLoaded", function() {
+        const contentContainer = document.querySelector('.desc-content');
+        if (!contentContainer) return;
 
-            // The official scraped fallback URL from your backend database
-            const officialFallbackUrl = "{{ job.source_link }}";
-            const jobTitle = "{{ job.title | replace('\"', '') }}";
+        const officialFallbackUrl = "{{ job.source_link }}";
+        const jobTitle = "{{ job.title | replace('\"', '') }}";
 
-            // 1. Remove social media and junk rows from Sarkari tables
-            const junkKeywords = [
-                'whatsapp', 'telegram', 'instagram', 'mobile app', 
-                'youtube', 'facebook', 'twitter', 'follow us', 'join our'
-            ];
-
-            const tableRows = contentContainer.querySelectorAll('tr');
-            tableRows.forEach(row => {
-                const rowText = row.textContent.toLowerCase();
-                const isJunk = junkKeywords.some(keyword => rowText.includes(keyword));
-                if (isJunk) row.remove(); 
-            });
-
-            // 2. SMART LINK REPAIR & GUARANTEED CLICKABILITY
-            const allLinks = contentContainer.querySelectorAll('a');
-            allLinks.forEach(link => {
-                const linkText = link.textContent.toLowerCase();
-                if (junkKeywords.some(keyword => linkText.includes(keyword))) {
-                    link.remove();
-                } else {
-                    let currentHref = link.getAttribute('href');
-
-                    // If SarkariExam left the link blank, broke it, or linked to their own homepage:
-                    if (!currentHref || 
-                        currentHref === '#' || 
-                        currentHref.trim() === '' || 
-                        currentHref.includes('sarkariexam.com') || 
-                        !currentHref.startsWith('http')) {
-                        
-                        // Smart routing: If we have a scraped link, use it! Otherwise, route to official government search!
-                        if (officialFallbackUrl && officialFallbackUrl !== 'None' && officialFallbackUrl !== '' && officialFallbackUrl.startsWith('http')) {
-                            link.setAttribute('href', officialFallbackUrl);
-                        } else {
-                            // Automatically generates a direct search to the official government recruitment page!
-                            const searchQuery = encodeURIComponent(`${jobTitle} official recruitment website apply online`);
-                            link.setAttribute('href', `https://www.google.com/search?q=${searchQuery}`);
-                        }
-                    }
-
-                    // Force opening in a new tab
-                    link.setAttribute('target', '_blank');
-                    link.setAttribute('rel', 'noopener noreferrer'); 
-                    link.classList.add('fw-bold');
-                    
-                    // Guarantee clickability over any overlapping divs
-                    link.style.position = 'relative';
-                    link.style.zIndex = '50';
-                    link.style.cursor = 'pointer';
-                    link.style.pointerEvents = 'auto';
-                    link.style.display = 'inline-block';
-                }
-            });
-
-            // 3. Strip hardcoded SarkariResult colors for clean theme support
-            const allElements = contentContainer.querySelectorAll('*');
-            allElements.forEach(el => {
-                if (el.hasAttribute('color')) el.removeAttribute('color');
-                if (el.hasAttribute('bgcolor')) el.removeAttribute('bgcolor');
-                if (el.hasAttribute('style')) {
-                    el.style.color = '';
-                    el.style.backgroundColor = '';
-                    el.style.background = '';
-                }
-            });
+        // 1. Clean out social media rows
+        const junkKeywords = ['whatsapp', 'telegram', 'instagram', 'mobile app', 'youtube', 'facebook', 'twitter', 'follow us', 'join our'];
+        contentContainer.querySelectorAll('tr').forEach(row => {
+            if (junkKeywords.some(keyword => row.textContent.toLowerCase().includes(keyword))) {
+                row.remove();
+            }
         });
-    </script>
+
+        // 2. FORCE CLICKABLE BUTTONS
+        // This targets any cell containing "Click Here" and makes the whole box a link
+        contentContainer.querySelectorAll('td').forEach(cell => {
+            const cellText = cell.textContent.toLowerCase();
+            
+            // Only target cells that contain "Click Here"
+            if (cellText.includes('click')) {
+                
+                // Block clicking if it's a future activation date
+                if (cellText.includes('activate') || cellText.includes('july')) {
+                    cell.style.cursor = "default";
+                    return; 
+                }
+
+                // Make the cell a button
+                cell.style.cursor = "pointer";
+                cell.style.backgroundColor = "rgba(79, 70, 229, 0.1)"; // Light blue highlight
+                cell.style.border = "1px solid #4F46E5";
+                
+                cell.onclick = function() {
+                    let targetUrl = officialFallbackUrl;
+                    const existingLink = cell.querySelector('a');
+                    
+                    if (existingLink && existingLink.getAttribute('href') && existingLink.getAttribute('href') !== '#') {
+                        targetUrl = existingLink.getAttribute('href');
+                    }
+                    
+                    if (targetUrl && targetUrl.startsWith('http')) {
+                        window.open(targetUrl, '_blank', 'noopener,noreferrer');
+                    } else {
+                        window.open(`https://www.google.com/search?q=${encodeURIComponent(jobTitle + ' official website')}`, '_blank');
+                    }
+                };
+            }
+        });
+
+        // 3. Clean up styling for dark mode compatibility
+        contentContainer.querySelectorAll('*').forEach(el => {
+            el.style.color = '';
+            el.style.backgroundColor = '';
+        });
+    });
+</script>

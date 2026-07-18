@@ -450,10 +450,14 @@ def dashboard():
 
 @app.route('/wipe-jobs')
 def wipe_jobs():
-    from app import db, Job
-    Job.query.delete()
-    db.session.commit()
-    return "All jobs wiped successfully!"
+    # Use the existing global db and Job model without re-importing from app
+    from __main__ import db, Job
+    try:
+        Job.query.delete()
+        db.session.commit()
+        return "All jobs wiped successfully!"
+    except Exception as e:
+        return f"Error: {str(e)}"
 
 @app.route('/email_matches', methods=['POST'])
 @csrf.exempt

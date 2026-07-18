@@ -360,6 +360,9 @@
             const contentContainer = document.querySelector('.desc-content');
             if (!contentContainer) return;
 
+            // The official scraped fallback URL from your backend database
+            const officialFallbackUrl = "{{ job.source_link }}";
+
             // 1. Target junk keywords to remove social media rows from Sarkari tables
             const junkKeywords = [
                 'whatsapp', 'telegram', 'instagram', 'mobile app', 
@@ -373,18 +376,37 @@
                 if (isJunk) row.remove(); 
             });
 
-            // 2. Format Links and guarantee clickability
+            // 2. SMART LINK REPAIR & GUARANTEED CLICKABILITY
             const allLinks = contentContainer.querySelectorAll('a');
             allLinks.forEach(link => {
                 const linkText = link.textContent.toLowerCase();
                 if (junkKeywords.some(keyword => linkText.includes(keyword))) {
                     link.remove();
                 } else {
+                    let currentHref = link.getAttribute('href');
+
+                    // If the link is broken, empty, links back to sarkariexam homepage, or is a relative link,
+                    // automatically swap it to the official job application link!
+                    if (!currentHref || 
+                        currentHref === '#' || 
+                        currentHref.trim() === '' || 
+                        currentHref.includes('sarkariexam.com') || 
+                        !currentHref.startsWith('http')) {
+                        
+                        if (officialFallbackUrl && officialFallbackUrl !== 'None' && officialFallbackUrl !== '') {
+                            link.setAttribute('href', officialFallbackUrl);
+                        } else {
+                            // If absolutely no link exists, point to Google Search for the job title as a safe failsafe
+                            link.setAttribute('href', `https://www.google.com/search?q={{ job.title | urlencode }}+apply+online`);
+                        }
+                    }
+
+                    // Force opening in a new tab so they don't lose their CareerWay dashboard
                     link.setAttribute('target', '_blank');
                     link.setAttribute('rel', 'noopener noreferrer'); 
                     link.classList.add('fw-bold');
                     
-                    // Force pointer events and z-index so links never freeze or hide behind elements
+                    // Force pointer events and high z-index so links never freeze or get blocked by invisible divs
                     link.style.position = 'relative';
                     link.style.zIndex = '50';
                     link.style.cursor = 'pointer';
@@ -399,7 +421,6 @@
                 if (el.hasAttribute('color')) el.removeAttribute('color');
                 if (el.hasAttribute('bgcolor')) el.removeAttribute('bgcolor');
                 if (el.hasAttribute('style')) {
-                    // Remove inline color and background-color styles that conflict with theme
                     el.style.color = '';
                     el.style.backgroundColor = '';
                     el.style.background = '';
@@ -407,5 +428,3 @@
             });
         });
     </script>
-</body>
-</html>

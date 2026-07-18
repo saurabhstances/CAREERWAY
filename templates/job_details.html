@@ -60,7 +60,7 @@
         .delay-2 { animation-delay: 0.2s; }
         .delay-3 { animation-delay: 0.3s; }
 
-        /* 🔥 STICKY BACK BUTTON CSS 🔥 */
+        /* 櫨 STICKY BACK BUTTON CSS 櫨 */
         .sticky-back-wrapper {
             position: sticky;
             top: 85px; 
@@ -128,26 +128,55 @@
         .desc-content h3, .desc-content h4 { font-size: 1.1rem; font-weight: 700; color: var(--text-main); margin-top: 25px; margin-bottom: 10px;}
         .desc-content ul { padding-left: 20px; margin-bottom: 20px; }
         .desc-content li { margin-bottom: 8px; }
-        .desc-content a { color: var(--primary-color); text-decoration: none; font-weight: 600;}
         
-        /* Strict Table Formatting for Scraped Govt Sites */
-        .desc-content table { width: 100%; border-collapse: separate; border-spacing: 0; margin: 25px 0; border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden; background: var(--card-bg);}
-        .desc-content th { background-color: var(--grid-bg); border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); padding: 15px; text-align: left; font-weight: 700; color: var(--text-main); }
-        .desc-content td { border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); padding: 15px; color: var(--text-main);}
-        .desc-content tr:last-child td { border-bottom: none; }
-        .desc-content th:last-child, .desc-content td:last-child { border-right: none; }
+        /* 櫨 GUARANTEED CLICKABLE & VIVID LINKS IN LIGHT THEME 櫨 */
+        .desc-content a,
+        .desc-content a *,
+        .desc-content table a,
+        .desc-content table a * {
+            color: #2563EB !important; /* Vivid Royal Blue */
+            text-decoration: underline !important;
+            font-weight: 700 !important;
+            cursor: pointer !important;
+            pointer-events: auto !important;
+            position: relative !important;
+            z-index: 50 !important;
+            display: inline-block !important;
+        }
+        
+        /* Strict Table Formatting for Scraped Govt Sites - Light Mode Colors */
+        .desc-content table { width: 100%; border-collapse: separate; border-spacing: 0; margin: 25px 0; border: 1px solid var(--border-color) !important; border-radius: 10px; overflow: hidden; background: var(--card-bg) !important;}
+        .desc-content th { background-color: #F1F5F9 !important; border-bottom: 1px solid var(--border-color) !important; border-right: 1px solid var(--border-color) !important; padding: 15px; text-align: left; font-weight: 700; color: #1E293B !important; }
+        .desc-content td { border-bottom: 1px solid var(--border-color) !important; border-right: 1px solid var(--border-color) !important; padding: 15px; color: var(--text-main) !important; background-color: var(--card-bg) !important;}
+        .desc-content tr:last-child td { border-bottom: none !important; }
+        .desc-content th:last-child, .desc-content td:last-child { border-right: none !important; }
 
-        /* 🔥 AGGRESSIVE DARK MODE FIX FOR INVISIBLE SARKARIRESULT TEXT 🔥 */
-        /* This forces EVERY single element inside the table to turn white in dark mode */
+        /* 櫨 AGGRESSIVE DARK MODE FIX FOR INVISIBLE TEXT & HIGH CONTRAST 櫨 */
         [data-theme="dark"] .desc-content,
         [data-theme="dark"] .desc-content * {
             color: #F9FAFB !important; 
             background-color: transparent !important;
             border-color: #374151 !important;
         }
+        
+        [data-theme="dark"] .desc-content table,
+        [data-theme="dark"] .desc-content th,
+        [data-theme="dark"] .desc-content td {
+            background-color: #1F2937 !important;
+            border-color: #374151 !important;
+            color: #F9FAFB !important;
+        }
+        [data-theme="dark"] .desc-content th {
+            background-color: #111827 !important; /* Slightly darker header for contrast */
+        }
+
+        /* 櫨 GUARANTEED CLICKABLE & VIVID LINKS IN DARK THEME 櫨 */
         [data-theme="dark"] .desc-content a,
-        [data-theme="dark"] .desc-content a * {
-            color: #818CF8 !important; /* Bright blue for links so they are readable */
+        [data-theme="dark"] .desc-content a *,
+        [data-theme="dark"] .desc-content table a,
+        [data-theme="dark"] .desc-content table a * {
+            color: #60A5FA !important; /* Glowing Sky Blue so they stand out cleanly */
+            text-decoration: underline !important;
         }
         
         @media (max-width: 768px) {
@@ -344,7 +373,7 @@
                 if (isJunk) row.remove(); 
             });
 
-            // 2. Format Links
+            // 2. Format Links and guarantee clickability
             const allLinks = contentContainer.querySelectorAll('a');
             allLinks.forEach(link => {
                 const linkText = link.textContent.toLowerCase();
@@ -353,24 +382,27 @@
                 } else {
                     link.setAttribute('target', '_blank');
                     link.setAttribute('rel', 'noopener noreferrer'); 
-                    link.classList.add('fw-bold', 'text-decoration-none');
-                    if(linkText.includes('click') || linkText.includes('download') || linkText.includes('apply')) {
-                        link.classList.add('text-primary');
-                    }
+                    link.classList.add('fw-bold');
+                    
+                    // Force pointer events and z-index so links never freeze or hide behind elements
+                    link.style.position = 'relative';
+                    link.style.zIndex = '50';
+                    link.style.cursor = 'pointer';
+                    link.style.pointerEvents = 'auto';
+                    link.style.display = 'inline-block';
                 }
             });
 
-            // 3. Strip hardcoded SarkariResult colors to ensure Dark Mode CSS can take over
+            // 3. Strip hardcoded SarkariResult colors so Light and Dark Mode CSS takes over cleanly
             const allElements = contentContainer.querySelectorAll('*');
             allElements.forEach(el => {
                 if (el.hasAttribute('color')) el.removeAttribute('color');
                 if (el.hasAttribute('bgcolor')) el.removeAttribute('bgcolor');
-                
-                if (el.style.color === 'black' || el.style.color === '#000000' || el.style.color === 'rgb(0, 0, 0)') {
+                if (el.hasAttribute('style')) {
+                    // Remove inline color and background-color styles that conflict with theme
                     el.style.color = '';
-                }
-                if (el.style.backgroundColor === 'white' || el.style.backgroundColor === '#ffffff' || el.style.backgroundColor === 'rgb(255, 255, 255)') {
                     el.style.backgroundColor = '';
+                    el.style.background = '';
                 }
             });
         });

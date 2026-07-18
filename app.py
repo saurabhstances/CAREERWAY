@@ -448,6 +448,13 @@ def dashboard():
                             daily_byte=todays_byte,
                             top_candidates=top_candidates)
 
+@app.route('/wipe-jobs')
+def wipe_jobs():
+    from app import db, Job
+    Job.query.delete()
+    db.session.commit()
+    return "All jobs wiped successfully!"
+
 @app.route('/email_matches', methods=['POST'])
 @csrf.exempt
 def email_matches():

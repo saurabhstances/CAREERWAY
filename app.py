@@ -448,21 +448,7 @@ def dashboard():
                             daily_byte=todays_byte,
                             top_candidates=top_candidates)
 
-@app.route('/wipe-jobs')
-def wipe_jobs():
-    try:
-        from app import db, Job, Application # Import your Application model here
-        
-        # 1. Delete all applications first (this breaks the link)
-        Application.query.delete()
-        
-        # 2. Now you can safely delete the jobs
-        num_deleted = Job.query.delete()
-        
-        db.session.commit()
-        return f"Success! Wiped all applications and {num_deleted} jobs."
-    except Exception as e:
-        return f"Error: {str(e)}"
+
 
 @app.route('/email_matches', methods=['POST'])
 @csrf.exempt

@@ -46,23 +46,7 @@ def fetch_govt_jobs():
                 url = link['href']
                 if "View All" in title or len(title) < 5: continue
                 
-                # --- 🔥 DUPLICATE PREVENTION LOGIC 🔥 ---
-                # 1. Clean the title to get the core name
-                # Example: "Railway RRB Group D Online Form 2026 - Extend" -> "Railway RRB Group D Online Form 2026"
-                base_title = title.split(' - ')[0].split(' – ')[0].strip()
-                
-                # 2. Check if a job with this base title already exists in the database
-                existing_job = Job.query.filter(Job.title.ilike(f"%{base_title}%")).first()
-                
-                if existing_job:
-                    # 3. If it exists but SarkariExam added a tag like " - Extend" or " - Last Date",
-                    # we just update the title in the DB so your UI badges work, but WE DON'T SCRAPE IT AGAIN.
-                    if existing_job.title != title:
-                        existing_job.title = title
-                        db.session.commit()
-                        print(f"   🔄 Updated Status Badge For: {base_title}")
-                    continue
-                # ----------------------------------------
+                if Job.query.filter_by(title=title).first(): continue
 
                 print(f"   ✨ Govt Extracting: {title[:40]}...")
                 job_data = scrape_job_smartly(url)

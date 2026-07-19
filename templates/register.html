@@ -1,137 +1,260 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register | CareerWay Hub</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CareerWay Hub | Register</title>
 
-    <style>
-        :root {
-            --primary: #2563eb;
-            --secondary: #4f46e5;
-        }
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
-            height: 100vh;
-            display: flex; align-items: center; justify-content: center;
-            position: relative; overflow: hidden;
-        }
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Poppins,sans-serif}
+body{
+height:100vh;
+display:flex;
+justify-content:center;
+align-items:center;
+overflow:hidden;
+background:linear-gradient(135deg,#eef7ff,#d7ecff,#c8e7ff,#eef8ff);
+position:relative;
+}
+body:before,body:after{
+content:"";
+position:absolute;
+border-radius:50%;
+filter:blur(60px);
+animation:move 8s ease-in-out infinite alternate;
+}
+body:before{width:450px;height:450px;background:#4f9dff55;left:-120px;top:-100px}
+body:after{width:350px;height:350px;background:#6ee7ff55;right:-80px;bottom:-80px}
 
-        /* Abstract Background Shapes */
-        .shape { position: absolute; border-radius: 50%; filter: blur(60px); opacity: 0.5; z-index: -1; }
-        .shape-1 { width: 500px; height: 500px; background: #cffafe; top: -150px; left: -150px; animation: float 6s infinite alternate; }
-        .shape-2 { width: 300px; height: 300px; background: #ddd6fe; bottom: -50px; right: -50px; animation: float 8s infinite alternate-reverse; }
+.grid{
+position:absolute;
+inset:0;
+background-image:
+linear-gradient(rgba(37,99,235,.05) 1px,transparent 1px),
+linear-gradient(90deg,rgba(37,99,235,.05) 1px,transparent 1px);
+background-size:60px 60px;
+}
 
-        @keyframes float { from { transform: translateY(0); } to { transform: translateY(20px); } }
+.hex{
+position:absolute;
+border:2px solid rgba(37,99,235,.15);
+transform:rotate(45deg);
+animation:float 8s ease-in-out infinite;
+}
+.h1{width:120px;height:120px;left:8%;top:18%}
+.h2{width:80px;height:80px;right:10%;top:15%;animation-delay:2s}
+.h3{width:150px;height:150px;left:12%;bottom:10%;animation-delay:3s}
+.h4{width:100px;height:100px;right:15%;bottom:15%;animation-delay:1s}
 
-        /* Card Styling */
-        .auth-card {
-            background: white; padding: 40px; width: 100%; max-width: 450px;
-            border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.05);
-            border: 1px solid white;
-        }
+.brand{
+position:absolute;
+left:60px;
+top:50%;
+transform:translateY(-50%);
+max-width:430px;
+}
+.brand h1{
+font-size:60px;
+font-weight:700;
+color:#174ea6;
+line-height:1;
+}
+.brand h1 span{color:#2563eb}
+.brand p{
+margin-top:18px;
+color:#475569;
+font-size:18px;
+line-height:1.7;
+}
+.tag{
+display:inline-block;
+margin-top:25px;
+padding:12px 22px;
+background:#fff;
+border-radius:30px;
+color:#2563eb;
+font-weight:600;
+box-shadow:0 10px 30px rgba(0,0,0,.08);
+}
 
-        .brand-text {
-            font-weight: 800;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
+.card{
+width:430px;
+padding:35px;
+border-radius:24px;
+background:rgba(255,255,255,.35);
+backdrop-filter:blur(18px);
+border:1px solid rgba(255,255,255,.6);
+box-shadow:0 20px 60px rgba(0,0,0,.12);
+animation:up .7s;
+}
 
-        /* Form Controls */
-        .form-floating .form-control, .form-select {
-            border-radius: 12px; border: 1px solid #e2e8f0; background: #f8fafc;
-        }
-        .form-control:focus, .form-select:focus {
-            background: white; border-color: var(--primary);
-            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
-        }
-        
-        .btn-register {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border: none; color: white; padding: 12px; width: 100%;
-            border-radius: 12px; font-weight: 600; font-size: 1rem;
-            margin-top: 15px; transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .btn-register:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(37, 99, 235, 0.25);
-            color: white;
-        }
-    </style>
+.logo{
+width:75px;
+height:75px;
+margin:auto;
+background:#fff;
+border-radius:50%;
+display:flex;
+justify-content:center;
+align-items:center;
+font-size:32px;
+color:#2563eb;
+}
+
+.card h2{
+margin:18px 0 6px;
+text-align:center;
+}
+
+.card p{
+text-align:center;
+color:#666;
+margin-bottom:25px;
+font-size:14px;
+}
+
+.input{
+position:relative;
+margin-bottom:18px;
+}
+
+.input i{
+position:absolute;
+left:15px;
+top:17px;
+color:#666;
+}
+
+.input input,
+.input select{
+width:100%;
+padding:14px 45px;
+border:none;
+border-radius:12px;
+background:#fff;
+font-size:15px;
+}
+
+.input input:focus,
+.input select:focus{
+outline:none;
+box-shadow:0 0 0 3px #93c5fd;
+}
+
+.eye{
+left:auto!important;
+right:16px;
+cursor:pointer;
+}
+
+button{
+width:100%;
+padding:15px;
+border:none;
+border-radius:12px;
+background:linear-gradient(90deg,#2563eb,#4f46e5);
+color:#fff;
+font-size:17px;
+font-weight:600;
+cursor:pointer;
+transition:.3s;
+}
+
+button:hover{
+transform:translateY(-3px);
+box-shadow:0 15px 30px rgba(37,99,235,.3);
+}
+
+.login{
+display:block;
+text-align:center;
+margin-top:18px;
+color:#2563eb;
+font-size:14px;
+text-decoration:none;
+font-weight:600;
+}
+
+@keyframes float{50%{transform:rotate(45deg) translateY(-20px)}}
+@keyframes move{100%{transform:translate(40px,30px)}}
+@keyframes up{from{opacity:0;transform:translateY(40px)}}
+
+@media(max-width:1000px){
+.brand{display:none}
+.card{width:92%}
+}
+</style>
 </head>
+
 <body>
 
-    <div class="shape shape-1"></div>
-    <div class="shape shape-2"></div>
+<div class="grid"></div>
 
-    <nav class="navbar fixed-top">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="#" style="color: var(--primary);"><i class="fas fa-robot me-2"></i>CareerWay Hub</a>
-            <a href="{{ url_for('login') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3">Log In</a>
-        </div>
-    </nav>
+<div class="hex h1"></div>
+<div class="hex h2"></div>
+<div class="hex h3"></div>
+<div class="hex h4"></div>
 
-    <div class="auth-card animate__animated animate__fadeInUp">
-        <div class="text-center mb-4">
-            <h3 class="fw-bold text-dark">Create Account</h3>
-            <p class="text-muted small">Join thousands of students building their careers.</p>
-        </div>
+<div class="brand">
+<h1>Career<span>Way</span><br>Hub</h1>
+<p>India's Smart AI Powered Job Portal connecting talented students with top recruiters.</p>
+<div class="tag">🚀 Launch Your Dream Career</div>
+</div>
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show small" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+<div class="card">
 
-        <form method="POST">
-            <!-- SECURITY: Hidden CSRF Token -->
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-            
-            <div class="form-floating mb-3">
-                <input type="text" name="name" class="form-control" id="nameInput" placeholder="John Doe" required>
-                <label for="nameInput">Full Name</label>
-            </div>
+<div class="logo">
+<i class="fa-solid fa-briefcase"></i>
+</div>
 
-            <div class="form-floating mb-3">
-                <input type="email" name="email" class="form-control" id="emailInput" placeholder="name@example.com" required>
-                <label for="emailInput">Email Address</label>
-            </div>
+<h2>Create Account</h2>
 
-            <div class="form-floating mb-3">
-                <input type="password" name="password" class="form-control" id="passInput" placeholder="Password" required>
-                <label for="passInput">Password</label>
-            </div>
+<p>Join thousands of professionals today.</p>
 
-            <div class="form-floating mb-3">
-                <select name="role" class="form-select" id="roleSelect" required>
-                    <option value="Student" selected>Student (Looking for Jobs)</option>
-                    <option value="Recruiter">Recruiter (Hiring Talent)</option>
-                </select>
-                <label for="roleSelect">I am a...</label>
-            </div>
+<form method="POST">
 
-            <button type="submit" class="btn-register">
-                Get Started <i class="fas fa-arrow-right ms-2"></i>
-            </button>
-            
-            <p class="text-center mt-4 small text-muted">
-                Already have an account? <a href="{{ url_for('login') }}" class="text-primary fw-bold text-decoration-none">Log in here</a>
-            </p>
-        </form>
-    </div>
+<div class="input">
+<i class="fa-solid fa-user"></i>
+<input type="text" name="name" placeholder="Full Name" required>
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<div class="input">
+<i class="fa-solid fa-envelope"></i>
+<input type="email" name="email" placeholder="Email Address" required>
+</div>
+
+<div class="input">
+<i class="fa-solid fa-lock"></i>
+<input id="pwd" type="password" name="password" placeholder="Password" required>
+<i class="fa-solid fa-eye eye" id="eye"></i>
+</div>
+
+<div class="input">
+<i class="fa-solid fa-user-graduate"></i>
+<select name="role">
+<option>Student</option>
+<option>Recruiter</option>
+</select>
+</div>
+
+<button>Create Account <i class="fa-solid fa-arrow-right"></i></button>
+
+<a class="login" href="{{ url_for('login') }}">
+<i class="fa-solid fa-arrow-left"></i> Back to Login
+</a>
+
+</form>
+
+</div>
+
+<script>
+const eye=document.getElementById("eye"),pwd=document.getElementById("pwd");
+eye.onclick=()=>{pwd.type=pwd.type=="password"?"text":"password";
+eye.className="fa-solid "+(pwd.type=="text"?"fa-eye-slash":"fa-eye")+" eye";}
+</script>
+
 </body>
 </html>

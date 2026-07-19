@@ -1,93 +1,122 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CareerWay Hub | Login</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CareerWay Hub | Login</title>
 
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
-<style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:Poppins,sans-serif}
-body{height:100vh;display:flex;justify-content:center;align-items:center;overflow:hidden;background:linear-gradient(135deg,#eef7ff,#d9edff,#c9e5ff,#eef8ff);position:relative}
-body:before,body:after{content:"";position:absolute;border-radius:50%;filter:blur(60px);animation:f 8s ease-in-out infinite alternate}
-body:before{width:420px;height:420px;background:#60a5fa55;left:-100px;top:-80px}
-body:after{width:320px;height:320px;background:#22d3ee55;right:-60px;bottom:-60px}
-.grid{position:absolute;inset:0;background-image:linear-gradient(rgba(37,99,235,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(37,99,235,.05) 1px,transparent 1px);background-size:60px 60px}
-.s{position:absolute;border:2px solid #2563eb22;transform:rotate(45deg);animation:f 8s infinite}
-.s1{width:120px;height:120px;left:8%;top:16%}.s2{width:90px;height:90px;right:12%;top:18%}.s3{width:140px;height:140px;left:12%;bottom:12%}.s4{width:100px;height:100px;right:16%;bottom:15%}
-.brand{position:absolute;left:60px;top:50%;transform:translateY(-50%);max-width:420px}
-.brand h1{font-size:58px;color:#174ea6;line-height:1}.brand span{color:#2563eb}.brand p{margin:18px 0;color:#475569;line-height:1.7}.tag{display:inline-block;padding:12px 20px;background:#fff;border-radius:30px;color:#2563eb;font-weight:600;box-shadow:0 10px 25px #0001}
-.card{width:420px;max-width:92%;padding:35px;background:rgba(255,255,255,.35);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.6);border-radius:24px;box-shadow:0 20px 60px #0002}
-.logo{width:75px;height:75px;background:#fff;border-radius:50%;display:flex;justify-content:center;align-items:center;margin:auto;font-size:30px;color:#2563eb}
-h2{text-align:center;margin:18px 0 5px}small{display:block;text-align:center;color:#666;margin-bottom:25px}
-.g{position:relative;margin-bottom:18px}.g input{width:100%;padding:14px 45px;border:none;border-radius:12px;background:#fff}.g input:focus{outline:none;box-shadow:0 0 0 3px #93c5fd}.g .l{position:absolute;left:15px;top:16px;color:#666}.eye{position:absolute;right:15px;top:16px;cursor:pointer;color:#666}
-.btn{width:100%;padding:14px;border:none;border-radius:12px;background:linear-gradient(90deg,#2563eb,#4f46e5);color:#fff;font-size:16px;font-weight:600;cursor:pointer}
-.btn:hover{opacity:.95}
-.links{display:flex;justify-content:space-between;font-size:13px;margin:15px 0}.links a,.login{text-decoration:none;color:#2563eb;font-weight:600}
-.or{text-align:center;margin:18px 0;color:#888}
-.google,.guest{display:block;text-align:center;padding:12px;border-radius:12px;text-decoration:none;font-weight:600}
-.google{background:#fff;color:#333;border:1px solid #ddd}
-.guest{margin-top:12px;border:1px dashed #2563eb;color:#2563eb}
-@keyframes f{50%{transform:translateY(-20px) rotate(45deg)}}
-@media(max-width:1000px){.brand{display:none}}
-</style>
+    <style>
+        *{ margin:0; padding:0; box-sizing:border-box; font-family:'Poppins',sans-serif; }
+        :root{ --primary:#2563eb; --secondary:#4f46e5; --bg1:#eef8ff; --bg2:#d8edff; }
+        body{ min-height:100vh; min-height:100dvh; display:flex; justify-content:center; align-items:center; overflow-x:hidden; overflow-y:auto; padding:30px; background:linear-gradient(135deg,#eef8ff,#dbeeff,#cfe7ff,#eef8ff); position:relative; }
+
+        /* Background & Shapes */
+        body::before{ content:""; position:absolute; width:600px; height:600px; left:-180px; top:-180px; background:#4f9cff55; border-radius:50%; filter:blur(70px); animation:blob1 10s ease-in-out infinite alternate; }
+        body::after{ content:""; position:absolute; width:500px; height:500px; right:-120px; bottom:-120px; background:#60d8ff55; border-radius:50%; filter:blur(70px); animation:blob2 12s ease-in-out infinite alternate; }
+        .grid{ position:absolute; inset:0; background-image: linear-gradient(rgba(37,99,235,.05) 1px,transparent 1px), linear-gradient(90deg,rgba(37,99,235,.05) 1px,transparent 1px); background-size:60px 60px; }
+        .shape{ position:absolute; border:2px solid rgba(37,99,235,.15); transform:rotate(45deg); animation:float 8s ease-in-out infinite; }
+        .s1{ width:140px; height:140px; left:7%; top:15%; }
+        .s2{ width:90px; height:90px; right:10%; top:18%; animation-delay:2s; }
+        .s3{ width:160px; height:160px; left:12%; bottom:12%; animation-delay:1s; }
+        .s4{ width:110px; height:110px; right:15%; bottom:10%; animation-delay:3s; }
+
+        /* Branding */
+        .brand{ position:absolute; left:6%; top:50%; transform:translateY(-50%); max-width:420px; z-index:2; }
+        .brand h1{ font-size:58px; line-height:1; font-weight:700; color:#1e3a8a; }
+        .brand span{ color:var(--primary); }
+        .brand p{ margin:22px 0; line-height:1.8; color:#475569; font-size:17px; }
+        .tag{ display:inline-block; padding:12px 22px; background:#fff; border-radius:40px; color:var(--primary); font-weight:600; box-shadow:0 15px 30px rgba(0,0,0,.08); }
+
+        /* Card */
+        .card{ width:min(430px,100%); padding:35px; background:rgba(255,255,255,.35); backdrop-filter:blur(18px); border:1px solid rgba(255,255,255,.6); border-radius:24px; box-shadow:0 20px 60px rgba(0,0,0,.12); position:relative; z-index:5; animation:up .8s; }
+        .logo{ width:80px; height:80px; margin:auto; border-radius:50%; display:flex; justify-content:center; align-items:center; background:white; font-size:34px; color:var(--primary); box-shadow:0 10px 25px rgba(0,0,0,.08); }
+        .card h2{ margin:18px 0 6px; text-align:center; font-size:32px; }
+        .card small{ display:block; text-align:center; color:#64748b; margin-bottom:25px; font-size:14px; }
+
+        /* Inputs & Buttons */
+        .group{ position:relative; margin-bottom:18px; }
+        .group input{ width:100%; padding:14px 46px; border:none; border-radius:12px; background:#fff; font-size:15px; }
+        .group input:focus{ outline:none; box-shadow:0 0 0 3px rgba(37,99,235,.18); }
+        .left{ position:absolute; left:15px; top:16px; color:#64748b; }
+        .eye{ position:absolute; right:15px; top:16px; cursor:pointer; color:#64748b; }
+        .btn{ width:100%; padding:15px; border:none; border-radius:12px; font-size:16px; font-weight:600; cursor:pointer; background:linear-gradient(135deg,var(--primary),var(--secondary)); color:white; transition:.3s; }
+        .btn:hover{ transform:translateY(-2px); box-shadow:0 12px 25px rgba(37,99,235,.3); }
+        .links{ display:flex; justify-content:space-between; margin:15px 0; font-size:13px; }
+        .links a{ text-decoration:none; color:var(--primary); font-weight:600; }
+        .or{ text-align:center; margin:20px 0; color:#64748b; position:relative; }
+        .or:before,.or:after{ content:""; position:absolute; top:50%; width:38%; height:1px; background:#dbe4ef; }
+        .or:before{ left:0; } .or:after{ right:0; }
+        .google, .guest{ display:block; width:100%; padding:13px; text-align:center; border-radius:12px; text-decoration:none; font-weight:600; transition:.3s; }
+        .google{ background:#fff; color:#333; border:1px solid #dbe4ef; }
+        .guest{ margin-top:12px; border:2px dashed #9ec5ff; color:var(--primary); background:#f8fbff; }
+
+        /* Animations */
+        @keyframes float{ 50%{transform:translateY(-20px) rotate(45deg);} }
+        @keyframes blob1{ 100%{transform:translate(60px,40px);} }
+        @keyframes blob2{ 100%{transform:translate(-50px,-30px);} }
+        @keyframes up{ from{opacity:0;transform:translateY(40px);} }
+
+        /* Responsive Fix */
+        @media(max-width:992px){
+            body{ display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+            .brand{ position: relative; top: 0; left: 0; transform: none; width: 100%; max-width: 430px; text-align: center; margin-bottom: 30px; }
+            .card{ margin: 0; width: 100%; max-width: 430px; }
+            .s3, .s4{ display:none; }
+        }
+        @media(max-width:480px){ .card{ padding:24px; } }
+    </style>
 </head>
 <body>
 
-<div class="grid"></div>
-<div class="s s1"></div><div class="s s2"></div><div class="s s3"></div><div class="s s4"></div>
+    <div class="grid"></div>
+    <div class="shape s1"></div>
+    <div class="shape s2"></div>
+    <div class="shape s3"></div>
+    <div class="shape s4"></div>
 
-<div class="brand">
-<h1>Career<span>Way</span><br>Hub</h1>
-<p>India's AI Powered Job Portal connecting talented students with leading recruiters.</p>
-<div class="tag">🚀 Your Dream Job Starts Here</div>
-</div>
+    <div class="brand">
+        <h1>Career<span>Way</span><br>Hub</h1>
+        <p>India's AI Powered Job Portal helping students, graduates and recruiters connect faster.</p>
+        <div class="tag">🚀 Launch Your Dream Career</div>
+    </div>
 
-<div class="card">
-<div class="logo"><i class="fa-solid fa-right-to-bracket"></i></div>
+    <div class="card">
+        <div class="logo"><i class="fa-solid fa-right-to-bracket"></i></div>
+        <h2>Welcome Back</h2>
+        <small>Sign in to continue your journey.</small>
 
-<h2>Welcome Back</h2>
-<small>Sign in to continue your journey.</small>
+        <form action="{{ url_for('login') }}" method="POST">
+            <div class="group">
+                <i class="fa-solid fa-envelope left"></i>
+                <input type="email" name="email" placeholder="Email Address" required>
+            </div>
+            <div class="group">
+                <i class="fa-solid fa-lock left"></i>
+                <input id="pwd" type="password" name="password" placeholder="Password" required>
+                <i id="eye" class="fa-solid fa-eye eye"></i>
+            </div>
+            <button class="btn">Sign In <i class="fa-solid fa-arrow-right"></i></button>
+            <div class="links">
+                <a href="#">Forgot Password?</a>
+                <a href="{{ url_for('register') }}">Create Account</a>
+            </div>
+            <div class="or">OR</div>
+            <a class="google" href="/login/google"><i class="fa-brands fa-google"></i> Continue with Google</a>
+            <a class="guest" href="{{ url_for('dashboard') }}"><i class="fa-solid fa-compass"></i> Skip Login as Guest</a>
+        </form>
+    </div>
 
-<form action="{{ url_for('login') }}" method="POST">
-
-<div class="g">
-<i class="fa-solid fa-envelope l"></i>
-<input type="email" name="email" placeholder="Email Address" required>
-</div>
-
-<div class="g">
-<i class="fa-solid fa-lock l"></i>
-<input id="pwd" type="password" name="password" placeholder="Password" required>
-<i id="eye" class="fa-solid fa-eye eye"></i>
-</div>
-
-<button class="btn">Sign In <i class="fa-solid fa-arrow-right"></i></button>
-
-<div class="links">
-<a href="#">Forgot Password?</a>
-<a href="{{ url_for('register') }}">Create Account</a>
-</div>
-
-<div class="or">OR</div>
-
-<a class="google" href="/login/google">
-<i class="fa-brands fa-google"></i> Continue with Google
-</a>
-
-<a class="guest" href="{{ url_for('dashboard') }}">
-<i class="fa-solid fa-compass"></i> Skip Login as Guest
-</a>
-
-</form>
-</div>
-
-<script>
-const p=document.getElementById("pwd"),e=document.getElementById("eye");
-e.onclick=()=>{p.type=p.type=="password"?"text":"password";e.className="fa-solid "+(p.type=="text"?"fa-eye-slash":"fa-eye")+" eye";}
-</script>
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/js/all.min.js"></script>
+    <script>
+        const eye = document.getElementById("eye");
+        const pwd = document.getElementById("pwd");
+        eye.onclick = function(){
+            pwd.type = pwd.type === "password" ? "text" : "password";
+            eye.className = "fa-solid " + (pwd.type === "text" ? "fa-eye-slash" : "fa-eye") + " eye";
+        };
+    </script>
 </body>
 </html>

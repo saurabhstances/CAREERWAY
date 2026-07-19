@@ -10,6 +10,7 @@ psycopg2-binary
 Flask-Limiter
 Flask-WTF
 WTForms
+email-validator
 
 # --- AI & ENVIRONMENT ---
 google-generativeai

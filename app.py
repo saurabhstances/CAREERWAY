@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, abort
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_mail import Mail, Message
@@ -19,51 +19,36 @@ from thefuzz import fuzz, process
 import json
 import re
 from functools import wraps
-from flask import request, abort, session, render_template, redirect, url_for
-from datetime import datetime
 import pypdf
 from dotenv import load_dotenv
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
 from flask_wtf.csrf import CSRFProtect
+from authlib.integrations.flask_client import OAuth
 
 # Disable SSL warnings
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-basedir = os.path.abspath(os.path.dirname(__file__))
-
 app = Flask(__name__)
-app.secret_key = "careerway_secret_key"
-app.config.update(
-    SESSION_COOKIE_SECURE=True,    # Transmit cookies over HTTPS only
-    SESSION_COOKIE_HTTPONLY=True,  # Prevent JavaScript XSS cookie theft
-    SESSION_COOKIE_SAMESITE='Lax'  # Mitigate cross-site tracking
-)
 
-# Initialize CSRF Protection
-csrf = CSRFProtect(app)
+# --- SECURITY & DATABASE CONFIGURATION ---
+app.secret_key = os.environ.get("SECRET_KEY", "careerway_secret_key_secure_2026")
 
-# Initialize Brute-Force Rate Limiter
-limiter = Limiter(
-    get_remote_address,
-    app=app,
-    default_limits=["200 per day", "50 per hour"],
-    storage_uri="memory://"
-)
-
-# Strict Password : Min 8 chars, 1 uppercase, 1 number, 1 special character
-PASSWORD_REGEX = r"^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&()#_+\-=\[\]{}|;:',.<>?/~`^])[A-Za-z\d@$!%*?&()#_+\-=\[\]{}|;:',.<>?/~`^]{8,}$"
-
-db_url = os.environ.get('DATABASE_URL', 'sqlite:///' + os.path.join(basedir, 'careerway.db'))
+# Dynamic PostgreSQL Database URI (handles cloud provider postgres:// to postgresql:// fixes automatically)
+db_url = os.environ.get('DATABASE_URL', 'sqlite:///careerway.db')
 if db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
-
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Enable CSRF Protection globally
+csrf = CSRFProtect(app)
+
 app.config['UPLOAD_FOLDER'] = 'static/resumes'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-FEEDBACK_UPLOAD_FOLDER = 'static/uploads/feedback'
-os.makedirs(FEEDBACK_UPLOAD_FOLDER, exist_ok=True)
+UPLOAD_FOLDER = 'static/uploads/feedback'
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+
 # --- GEMINI CONFIG ---
 load_dotenv()
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
@@ -71,14 +56,23 @@ genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 # --- EMAIL CONFIG ---
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 465
-app.config['MAIL_USERNAME'] = 'your_email@gmail.com' # CHANGE THIS
-app.config['MAIL_PASSWORD'] = 'xxxx xxxx xxxx xxxx'  # CHANGE THIS
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', 'your_email@gmail.com')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', 'xxxx xxxx xxxx xxxx')
 app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USE_SSL'] = True
 
 mail = Mail(app)
 db = SQLAlchemy(app)
 
+# --- GOOGLE OAUTH CONFIGURATION ---
+oauth = OAuth(app)
+google = oauth.register(
+    name='google',
+    client_id=os.environ.get("GOOGLE_CLIENT_ID"),
+    client_secret=os.environ.get("GOOGLE_CLIENT_SECRET"),
+    server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
+    client_kwargs={'scope': 'openid email profile'}
+)
 # ===========================
 #        DATABASE MODELS
 # ===========================
@@ -161,12 +155,8 @@ class StudyLog(db.Model):
     status = db.Column(db.String(20), default='Completed')
     topic_covered = db.Column(db.String(100))
 
-           
-# --- DATABASE SETUP ---
-with app.app_context():
-    db.create_all()
-    print("Database tables verified and created successfully!")
-
+    def __repr__(self):
+        return f'<StudyLog {self.topic_covered} - {self.id}>'
 
 # --- HELPERS ---
 def generate_unique_username(full_name):
@@ -175,10 +165,6 @@ def generate_unique_username(full_name):
     while User.query.filter_by(username=candidate).first():
         candidate = base_name + str(random.randint(100, 999))
     return candidate
-
-def __repr__(self):
-    return f'<Feedback {self.category} - {self.id}>'
-
 
 def calculate_profile_score(user):
     score = 0
@@ -273,16 +259,18 @@ def get_recommendations(user):
 #        AUTH ROUTES
 # ===========================
 
-@app.route('/')
-def home(): return redirect(url_for('login'))
+@app.route('/', methods=['GET'])
+def home(): 
+    return redirect(url_for('login'))
+
 
 @app.route('/login', methods=['GET', 'POST'])
-@limiter.limit("10 per minute")  # Prevent brute-force login attacks
+@csrf.exempt
 def login():
     if request.method == 'POST':
-        user_input = request.form['email'].strip()
+        user_input = request.form['email']
         password = request.form['password']
-        user = User.query.filter(or_(User.email == user_input.lower(), User.username == user_input)).first()
+        user = User.query.filter(or_(User.email == user_input, User.username == user_input)).first()
         if user and check_password_hash(user.password, password):
             session['user_id'] = user.id
             session['user_name'] = user.name
@@ -294,31 +282,19 @@ def login():
             flash("Invalid Credentials", "danger")
     return render_template('login.html')
 
-@app.route('/logout')
+@app.route('/logout', methods=['GET'])
 def logout():
     session.clear()
     return redirect(url_for('login'))
 
 @app.route('/register', methods=['GET', 'POST'])
-@limiter.limit("10 per minute")  # Prevent registration spam
+@csrf.exempt
 def register():
     if request.method == 'POST':
-        name = request.form['name'].strip()
-        email = request.form['email'].strip().lower()
+        name = request.form['name']
+        email = request.form['email']
         password = request.form['password']
         role = request.form['role']
-        
-        # 1. IMMEDIATE EMAIL UNIQUENESS CHECK
-        existing_user = User.query.filter_by(email=email).first()
-        if existing_user:
-            flash("This Email ID is already registered! Please log in instead.", "danger")
-            return render_template('register.html')
-            
-        # 2. STRICT PASSWORD STRENGTH VALIDATION
-        if not re.match(PASSWORD_REGEX, password):
-            flash("Security Alert: Password must be at least 8 characters long and include 1 uppercase letter, 1 number, and 1 special character.", "danger")
-            return render_template('register.html')
-
         auto_username = generate_unique_username(name)
         hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
         
@@ -333,10 +309,10 @@ def register():
             if role == 'Recruiter': return redirect(url_for('recruiter_dashboard'))
             return redirect(url_for('dashboard'))
         except Exception as e: 
-            db.session.rollback() # Prevent database corruption on error
             print(f"Register Error: {e}") 
-            flash("An internal error occurred. Please try again later.", "danger")
+            flash("Error: Email already exists.", "danger")
     return render_template('register.html')
+
 # ===========================
 #      DASHBOARD & CORE
 # ===========================
@@ -348,24 +324,70 @@ def parse_date_str(date_str):
         return datetime.strptime(clean_date, "%d %B %Y")
     except: return None
 
-@app.route('/dashboard')
+# Route 1: When user clicks "Sign in with Google" button
+@app.route('/login/google', methods=['GET'])
+@csrf.exempt  
+def google_login():
+    redirect_uri = url_for('google_callback', _external=True)
+    return google.authorize_redirect(redirect_uri)
+
+# Route 2: Where Google sends the user back after they log in
+@app.route('/auth/google/callback', methods=['GET', 'POST'])
+@csrf.exempt
+def google_callback():
+    try:
+        token = google.authorize_access_token()
+        user_info = token.get('userinfo')
+        if not user_info:
+            user_info = google.userinfo()
+        
+        email = user_info['email']
+        name = user_info.get('name', 'Google User')
+        
+        # Check if this email already exists in your database
+        user = User.query.filter_by(email=email).first()
+        
+        if not user:
+            # First time user! Auto-register them as a 'Student'
+            auto_username = generate_unique_username(name)
+            dummy_pass = generate_password_hash("google_auth_dummy_pass_2026", method='pbkdf2:sha256')
+            
+            user = User(
+                name=name, 
+                email=email, 
+                password=dummy_pass, 
+                role='Student', 
+                username=auto_username
+            )
+            db.session.add(user)
+            db.session.commit()
+            
+        # Log the user into your Flask session
+        session['user_id'] = user.id
+        session['user_name'] = user.name
+        session['user_role'] = user.role
+        
+        flash(f"Welcome, {user.name}!", "success")
+        return redirect(url_for('dashboard'))
+        
+    except Exception as e:
+        print(f"Google Login Error: {e}")
+        return f"Google Login Error: {str(e)}"
+
+@app.route('/dashboard', methods=['GET'])
 def dashboard():
-    # 1. --- LOGGED IN CHECK ---
     is_logged_in = 'user_id' in session
     user_id = session.get('user_id')
     user = User.query.get(user_id) if is_logged_in else None
     
-    # Redirect if recruiter (security)
     if is_logged_in and session.get('user_role') == 'Recruiter':
         return redirect(url_for('recruiter_dashboard'))
     
     page = request.args.get('page', 1, type=int)
     
-    # 2. --- JOBS DATA (Shared for User & Guest) ---
     govt_jobs_pagination = Job.query.filter_by(job_type='Govt').order_by(Job.id.desc()).paginate(page=page, per_page=20, error_out=False)
     private_jobs = Job.query.filter_by(job_type='Private', status='Active').order_by(Job.date_posted.desc()).all()
     
-    # Distance Logic
     user_city = user.location.lower().strip() if (user and user.location) else ""
     for job in private_jobs:
         job_city = job.location.lower().strip()
@@ -385,19 +407,16 @@ def dashboard():
             sd = parse_date_str(job.application_start_date)
             if sd and 0 <= (today - sd).days <= 5: job.is_new = True
 
-    # 3. --- PERSONALIZED DATA (Conditioned on Login) ---
     recommendations = get_recommendations(user) if is_logged_in else []
     applied_ids = []
     my_apps = []
     top_candidates = []
     
-    # Default Stats for Guest
     stats = {
         'total': 0, 'interviews': 0, 'score': 0, 'pending': 0, 'streak': 0, 'dates': []
     }
 
     if is_logged_in:
-        # Streak Calculation
         logs = StudyLog.query.filter_by(user_id=user.id).all()
         completed_dates = list(set([log.date for log in logs]))
         current_streak = len(completed_dates)
@@ -414,7 +433,6 @@ def dashboard():
             'dates': completed_dates
         }
 
-        # Leaderboard Logic (Only for logged in users to save processing)
         all_students = User.query.filter_by(role='Student').all()
         leaderboard_data = []
         for student in all_students:
@@ -435,9 +453,8 @@ def dashboard():
 
     todays_byte = {"word": "Ubiquitous", "meaning": "Present everywhere.", "gk": "USB was invented by Ajay Bhatt.", "color": "primary"}
     
-    # 4. --- RENDER ---
     return render_template('dashboard.html', 
-                            is_logged_in=is_logged_in,  # IMPORTANT: Pass this to hide features
+                            is_logged_in=is_logged_in,
                             private_jobs=private_jobs, 
                             govt_jobs=govt_jobs_pagination, 
                             recommendations=recommendations,
@@ -447,8 +464,6 @@ def dashboard():
                             user_name=session.get('user_name', 'Guest'), 
                             daily_byte=todays_byte,
                             top_candidates=top_candidates)
-
-
 
 @app.route('/email_matches', methods=['POST'])
 @csrf.exempt
@@ -477,7 +492,7 @@ def email_matches():
         
     return redirect(url_for('dashboard'))
 
-@app.route('/auto_fetch_sarkari', methods=['GET','POST'])
+@app.route('/auto_fetch_sarkari', methods=['POST'])
 @csrf.exempt
 def auto_fetch_sarkari():
     from auto_scraper import fetch_latest_jobs
@@ -522,7 +537,7 @@ def complete_profile():
         return redirect(url_for('dashboard'))
     return render_template('student_profile.html', user=user)
 
-@app.route('/job/<int:job_id>')
+@app.route('/job/<int:job_id>', methods=['GET'])
 def view_job(job_id):
     if 'user_id' not in session: return redirect(url_for('login'))
     job = Job.query.get_or_404(job_id)
@@ -531,7 +546,7 @@ def view_job(job_id):
     if Application.query.filter_by(job_id=job.id, student_id=user.id).first(): has_applied = True
     return render_template('job_details.html', job=job, has_applied=has_applied)
 
-# --- APPLY PROCESS (EMAIL REMOVED AS REQUESTED) ---
+# --- APPLY PROCESS ---
 @app.route('/apply_process/<int:job_id>', methods=['GET', 'POST'])
 @csrf.exempt
 def apply_process(job_id):
@@ -554,7 +569,7 @@ def apply_process(job_id):
         
     return render_template('Apply_Job.html', job=job, user=user)
 
-@app.route('/recruiter_dashboard')
+@app.route('/recruiter_dashboard', methods=['GET'])
 def recruiter_dashboard():
     if 'user_id' not in session or session.get('user_role') != 'Recruiter': return redirect(url_for('login'))
     my_jobs = Job.query.filter_by(recruiter_id=session['user_id']).order_by(Job.date_posted.desc()).all()
@@ -578,7 +593,7 @@ def post_job():
         return redirect(url_for('recruiter_dashboard'))
     return render_template('post_job.html')
 
-@app.route('/job_applicants/<int:job_id>')
+@app.route('/job_applicants/<int:job_id>', methods=['GET'])
 def job_applicants(job_id):
     if 'user_id' not in session or session.get('user_role') != 'Recruiter': 
         return redirect(url_for('login'))
@@ -604,8 +619,9 @@ def job_applicants(job_id):
     ranked_applicants.sort(key=lambda x: x['score'], reverse=True)
     return render_template('applicants_list.html', job=job, applicants=ranked_applicants, user_name=session.get('user_name'))
 
-# --- UPDATE STATUS (EMAIL REMOVED) ---
-@app.route('/update_status/<int:app_id>/<string:status>')
+# --- UPDATE STATUS ---
+@app.route('/update_status/<int:app_id>/<string:status>', methods=['GET', 'POST'])
+@csrf.exempt
 def update_status(app_id, status):
     if 'user_id' not in session or session.get('user_role') != 'Recruiter': return redirect(url_for('login'))
     application = Application.query.get_or_404(app_id)
@@ -613,7 +629,7 @@ def update_status(app_id, status):
     db.session.commit()
     return redirect(url_for('job_applicants', job_id=application.job.id))
 
-@app.route('/library')
+@app.route('/library', methods=['GET'])
 def library():
     if 'user_id' not in session: return redirect(url_for('login'))
     resources = Resource.query.order_by(Resource.uploaded_at.desc()).all()
@@ -638,7 +654,7 @@ def upload_resource():
             return redirect(url_for('library'))
     return render_template('upload_resource.html')
 
-@app.route('/download/<filename>')
+@app.route('/download/<filename>', methods=['GET'])
 def download_file(filename):
     if 'user_id' not in session: return redirect(url_for('login'))
     return redirect(url_for('static', filename='resumes/' + filename))
@@ -650,13 +666,12 @@ def resume_builder():
     user = User.query.get(session['user_id'])
     
     if request.method == 'POST':
-        # Passes beautifully formatted form data directly to the preview!
         form_data = request.form
         return render_template('resume_preview.html', user=user, data=form_data)
         
     return render_template('resume_form.html', user=user)
 
-@app.route('/ai_job_matcher')
+@app.route('/ai_job_matcher', methods=['GET'])
 def ai_job_matcher():
     if 'user_id' not in session: return redirect(url_for('login'))
     user = User.query.get(session['user_id'])
@@ -700,7 +715,6 @@ def ask_botg():
         user_message = request.json.get('message', '')
         language = request.json.get('language', 'English')
         
-        # Safely handle empty skills
         user_skills = user.skills if user.skills else 'None listed'
         
         my_apps = Application.query.filter_by(student_id=user.id).all()
@@ -739,7 +753,6 @@ def ask_botg():
         model = genai.GenerativeModel('gemini-2.5-flash')
         bot_reply = model.generate_content(prompt).text.strip()
         
-        # Clean up any accidental markdown blocks the AI might add
         bot_reply = bot_reply.replace('```html', '').replace('```', '')
         
         return {"reply": bot_reply}
@@ -747,7 +760,6 @@ def ask_botg():
     except Exception as e:
         print(f"!!! BotG Error !!! -> {str(e)}")
         return {"reply": f"<b style='color:red;'>System Error:</b> {str(e)}"}
-
 
 # --- 2. NEW REAL-TIME TRANSLATION API ---
 @app.route('/api/translate_chat', methods=['POST'])
@@ -775,7 +787,7 @@ def translate_chat():
         print(f"Translate Error: {e}")
         return jsonify({'text': text}) 
     
-@app.route('/interview_prep')
+@app.route('/interview_prep', methods=['GET'])
 def interview_prep():
     if 'user_id' not in session: return redirect(url_for('login'))
     user = User.query.get(session['user_id'])
@@ -823,7 +835,6 @@ def interview_bot():
         
         raw_text = response.text.strip()
         
-        # BULLETPROOF FIX: Use Regex to extract ONLY the JSON part
         match = re.search(r'\{[\s\S]*\}', raw_text)
         
         if match:
@@ -874,6 +885,7 @@ def generate_roadmap():
         return jsonify({"error": "AI could not generate roadmap"}), 500
 
 @app.route('/api/get_daily_task', methods=['POST'])
+@csrf.exempt
 def get_daily_task():
     if 'user_id' not in session: return jsonify({"error": "Unauthorized"}), 401
     user = User.query.get(session['user_id'])
@@ -1039,7 +1051,8 @@ def scan_resume():
     except Exception as e:
         return jsonify({"error": "AI Brain busy. Try again."})
 
-@app.route('/delete_job/<int:job_id>')
+@app.route('/delete_job/<int:job_id>', methods=['GET', 'POST'])
+@csrf.exempt
 def delete_job(job_id):
     if 'user_id' not in session or session.get('user_role') != 'Recruiter': 
         return redirect(url_for('login'))
@@ -1075,7 +1088,6 @@ def ai_rank_applicants(job_id):
     if len(applications) == 0:
         return jsonify({"error": "No applications received yet!"})
         
-    # Gather candidate data
     candidates_data = []
     for app in applications:
         st = app.student
@@ -1118,7 +1130,6 @@ def ai_rank_applicants(job_id):
 @app.route('/feedback', methods=['GET', 'POST'])
 @csrf.exempt
 def feedback():
-    # Guests can provide feedback too, but we track user_id if logged in
     is_logged_in = 'user_id' in session
     
     if request.method == 'POST':
@@ -1126,19 +1137,16 @@ def feedback():
         rating = request.form.get('rating')
         message = request.form.get('message')
         
-        # --- 🔥 NEW: Handle File Upload 🔥 ---
         file = request.files.get('screenshot')
         filename = None
         if file and file.filename != '':
             filename = secure_filename(file.filename)
             file.save(os.path.join(UPLOAD_FOLDER, filename))
         
-        # Log it to your terminal
         print(f"🚀 Feedback: {category} | Rating: {rating} | Msg: {message} | File: {filename}")
 
-        # --- 🔥 Updated Thank You Message 🔥 ---
         flash("Thank you for your valuable feedback from the CareerWay Team.", "success")
-        return redirect(url_for('feedback')) # Redirect back to show the alert on the feedback page
+        return redirect(url_for('feedback')) 
         
     return render_template('feedback.html', 
                            user_name=session.get('user_name', 'Guest'), 
@@ -1146,30 +1154,23 @@ def feedback():
 
 ADMIN_ACCESS_TOKEN = "CARRY1234"
 
-# 🔥 2. SESSION PROTECTION DECORATOR
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        # Check if the session has the admin flag
         if not session.get('is_admin_authenticated'):
-            # If not logged in, pretend the page doesn't exist
             abort(404)
         return f(*args, **kwargs)
     return decorated_function
 
-# 🔥 3. THE SECRET GATEWAY (Entry Point)
-# URL: http://127.0.0.1:5000/gateway?token=CARRY1234
-@app.route('/gateway')
+@app.route('/gateway', methods=['GET'])
 def admin_gateway():
     user_token = request.args.get('token')
     
     if user_token == ADMIN_ACCESS_TOKEN:
         return render_template('admin_login.html')
     
-    # Incorrect or missing token results in "Not Found"
     abort(404)
 
-# 🔥 4. AUTHENTICATION PROCESS
 @app.route('/process_admin', methods=['POST'])
 @csrf.exempt
 def process_admin():
@@ -1177,25 +1178,18 @@ def process_admin():
     admin_pwd = request.form.get('admin_pwd')
     
     if admin_id == "Saurabh_Admin" and admin_pwd == "Carry1234":
-        # Create a permanent secure session
         session.permanent = True 
         session['is_admin_authenticated'] = True
         return redirect(url_for('admin_dashboard'))
     
     return "Invalid Credentials", 403
 
-# 🔥 5. PROTECTED ADMIN DASHBOARD
-@app.route('/admin/dashboard')
-@admin_required # Your secret access key protection
+@app.route('/admin/dashboard', methods=['GET'])
+@admin_required 
 def admin_dashboard():
-    # 1. Fetch Feedback (Matches your form fields)
-    
-    
-    # 2. Fetch Users by Role
     recruiters = User.query.filter_by(role='Recruiter').all()
     students = User.query.filter_by(role='Student').all()
     
-    # 3. System Statistics for Stat Cards
     stats = {
         'total_recruiters': len(recruiters),
         'total_students': len(students),
@@ -1207,12 +1201,9 @@ def admin_dashboard():
                            students=students,
                            stats=stats)
 
-# 🔥 6. LOGOUT AND KILL SESSION
-@app.route('/admin/logout')
+@app.route('/admin/logout', methods=['GET'])
 def admin_logout():
-    # Remove only admin credentials from the session
     session.pop('is_admin_authenticated', None)
-    # Clear entire session for maximum security
     session.clear() 
     return redirect(url_for('dashboard'))
 

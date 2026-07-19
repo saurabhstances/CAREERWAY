@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 import re
+from urllib.parse import urljoin
 
 # --- CONFIG ---
 HEADERS = {
@@ -8,9 +9,10 @@ HEADERS = {
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
 }
 
-def clean_and_style_html(soup_element):
+
+def clean_and_style_html(soup_element, base_url="https://www.sarkariexam.com"):
     """
-    Attempts to clean and style HTML. If it fails, returns raw HTML safely.
+    Cleans HTML, preserves table formatting, and GUARANTEES clickable links!
     """
     if not soup_element: return ""
 
@@ -27,44 +29,51 @@ def clean_and_style_html(soup_element):
                 if "ad" in classes or "ad" in id_name or "sponsored" in classes:
                     div.decompose()
 
-        # 3. STYLE TABLES (Safe Mode)
+        # 3. STYLE TABLES
         for table in soup_element.find_all("table"):
-            table['class'] = "table table-bordered table-striped table-hover"
-            table['style'] = "width: 100%; margin-top: 15px; margin-bottom: 25px; background: white;"
+            table['class'] = "table table-bordered"
+            table['style'] = "width: 100%; margin-top: 15px; margin-bottom: 25px; background: #ffffff; border: 1px solid #dee2e6;"
             
-            # Safe check for thead
             thead = table.find("thead")
             if thead:
-                thead['class'] = "table-dark"
+                thead['style'] = "background-color: #f8fafc; color: #1f2937; font-weight: bold;"
             else:
                 first_row = table.find("tr")
                 if first_row: 
-                    first_row['style'] = "background-color: #0d6efd; color: white; font-weight: bold; text-align: center;"
+                    first_row['style'] = "background-color: #f8fafc; color: #1f2937; font-weight: bold; text-align: center;"
 
-        # 4. STYLE HEADERS
-        for header in soup_element.find_all(["h1", "h2", "h3", "h4", "strong"]):
-            text = header.get_text(strip=True)
-            if len(text) > 3 and len(text) < 100:
-                new_tag = soup_element.new_tag("h4")
-                new_tag.string = text
-                new_tag['class'] = "alert alert-primary"
-                new_tag['style'] = "margin-top: 30px; font-weight: bold; text-align: center; border: none; border-radius: 8px;"
-                header.replace_with(new_tag)
+        # 4. 🔥 THE FIX: MODIFY TAGS IN-PLACE WITHOUT ERASING LINKS! 🔥
+        for header in soup_element.find_all(["h1", "h2", "h3", "h4"]):
+            # If this header is inside a table cell, convert to simple span so it doesn't break table layout or erase links!
+            if header.find_parent("table"):
+                header.name = "span"
+                continue
+                
+            # Modify tag in-place so child tags (like <a href="...">) are NEVER deleted!
+            header.name = "h4"
+            header['style'] = "margin-top: 25px; margin-bottom: 15px; color: #1f2937; font-weight: bold; font-size: 1.15rem; border-left: 4px solid #b91c1c; padding-left: 10px;"
 
-        # 5. FIX LINKS
+        # 5. 🔥 GUARANTEE EVERY LINK IS CLICKABLE & BLUE 🔥
         for a in soup_element.find_all("a"):
-            a['target'] = "_blank"
-            a['rel'] = "noopener noreferrer"
-            a['style'] = "text-decoration: none; color: #dc3545; font-weight: bold;"
-            
-            if "click" in a.get_text().lower() or "apply" in a.get_text().lower():
-                a['class'] = "btn btn-sm btn-outline-danger ms-2"
+            href = a.get("href")
+            if href and href != "#" and "javascript:" not in href.lower():
+                # Convert relative URLs to full website links
+                full_url = urljoin(base_url, href)
+                a['href'] = full_url
+                a['target'] = "_blank"  # Open in new tab
+                a['rel'] = "noopener noreferrer"
+                
+                # Force bright blue clickable link styling
+                a['style'] = "color: #2563eb !important; font-weight: 700 !important; text-decoration: underline !important; cursor: pointer !important; display: inline !important;"
+                
+                # Clean out Bootstrap classes that might disable clicks
+                if a.has_attr('class'):
+                    a['class'] = [c for c in a['class'] if not any(x in c for x in ['disabled', 'btn', 'pe-none'])]
 
         return str(soup_element)
 
     except Exception as e:
-        print(f"      ⚠️ Styling Error (Skipping style): {e}")
-        # FALLBACK: If styling fails, return the raw content so we don't lose the job
+        print(f"      ⚠️ Styling Error: {e}")
         return str(soup_element)
 
 def extract_dates(soup):
@@ -128,7 +137,8 @@ def scrape_job_smartly(url):
         
         if content:
             print("      ✅ Found Content Box. Cleaning...")
-            final_html = clean_and_style_html(content)
+            # PASS THE URL HERE:
+            final_html = clean_and_style_html(content, base_url=url) 
         else:
             print("      ⚠️ Main box missing. Switching to Table Vacuum.")
             all_tables = soup.find_all('table')
@@ -139,7 +149,8 @@ def scrape_job_smartly(url):
                     temp_html += str(t) + "<br>"
                 
                 temp_soup = BeautifulSoup(temp_html, 'html.parser')
-                final_html = clean_and_style_html(temp_soup)
+                # PASS THE URL HERE AS WELL:
+                final_html = clean_and_style_html(temp_soup, base_url=url)
 
         # Check if we got anything
         if not final_html or len(final_html) < 50:
